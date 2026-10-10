@@ -1,0 +1,198 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum Status {
+  INITIATED
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+enum Mode {
+  ONLINE
+  OFFLINE
+  CHEQUE
+}
+
+model User {
+  userId           String        @id @default(auto()) @map("_id") @db.ObjectId
+  userEmail        String        @unique
+  userPassword     String
+  userName         String
+  userRole         Role?
+  userRefreshToken String?
+  //BackRelation
+  Transaction      Transaction[]
+}
+
+model Product {
+  ProductID          String           @id @default(auto()) @map("_id") @db.ObjectId
+  ProductCode        String           @unique
+  BarCode            String
+  ProductName        String
+  ProductDescription String
+  ProductCategory    String
+  ReorderQuantity    Int?
+  PackedWeight       Float?
+  PackedHeight       Float?
+  PackedWidth        Float?
+  PackedDepth        Float?
+  Refrigerated       Boolean?
+  CostPrice          Float
+  SellPrice          Float
+  MaxretailPrice     Float
+  //BackRelation
+  OrderDetail        Orderdetail[]
+  Transfer           Transfer[]
+  Inventory          Inventory[]
+  DeliveryDetail     DeliveryDetail[]
+}
+
+model Location {
+  LocationID      String      @id @default(auto()) @map("_id") @db.ObjectId
+  LocationName    String
+  LocationAddress String
+  //BackRelation
+  Warehouse       Warehouse[]
+}
+
+model Warehouse {
+  WarehouseID    String      @id @default(auto()) @map("_id") @db.ObjectId
+  WarehouseName  String
+  isRefrigerated Boolean
+  //Relation
+  LocationID     String      @db.ObjectId
+  Location       Location    @relation(fields: [LocationID], references: [LocationID])
+  //Backrelation
+  OutTransfer    Transfer[]  @relation("OutWarehouseTransfers")
+  InTransfer     Transfer[]  @relation("InWarehouseTransfers")
+  Inventory      Inventory[]
+}
+
+model Inventory {
+  InventoryID        String    @id @default(auto()) @map("_id") @db.ObjectId
+  InventoryAvailable Int
+  MinStockLevel      Int
+  MaxStockLevel      Int
+  ReorderPoint       Int
+  //Relation
+  ProductID          String    @db.ObjectId
+  Product            Product   @relation(fields: [ProductID], references: [ProductID])
+  WarehouseID        String    @db.ObjectId
+  Warehouse          Warehouse @relation(fields: [WarehouseID], references: [WarehouseID])
+}
+
+model Customer {
+  CustomerID      String     @id @default(auto()) @map("_id") @db.ObjectId
+  CustomerName    String
+  CustomerAddress String
+  //BackRelation
+  Delivery        Delivery[]
+}
+
+model Delivery {
+  DeliveryID     String           @id @default(auto()) @map("_id") @db.ObjectId
+  SalesDate      DateTime
+  //Relation
+  CustomerID     String           @db.ObjectId
+  Customer       Customer         @relation(fields: [CustomerID], references: [CustomerID])
+  //BackRelation
+  DeliveryDetail DeliveryDetail[]
+  Payments       Payment[]
+}
+
+model DeliveryDetail {
+  DeliveryDetailID String    @id @default(auto()) @map("_id") @db.ObjectId
+  DeliveryQuantity Int
+  ExpectedDate     DateTime
+  ActualDate       DateTime?
+  //Relation
+  ProductID        String    @db.ObjectId
+  Product          Product   @relation(fields: [ProductID], references: [ProductID])
+  DeliveryID       String    @db.ObjectId
+  Delivery         Delivery  @relation(fields: [DeliveryID], references: [DeliveryID])
+}
+
+model Provider {
+  ProviderID      String  @id @default(auto()) @map("_id") @db.ObjectId
+  ProviderName    String
+  ProviderAddress String
+  //BackRelation
+  Order           Order[]
+}
+
+model Order {
+  OrderID     String        @id @default(auto()) @map("_id") @db.ObjectId
+  OrderDate   DateTime
+  //Relation 
+  ProviderID  String        @db.ObjectId
+  Provider    Provider      @relation(fields: [ProviderID], references: [ProviderID])
+  //BackRelation
+  Orderdetail Orderdetail[]
+  Payments    Payment[]
+}
+
+model Orderdetail {
+  OrderDetailID String    @id @default(auto()) @map("_id") @db.ObjectId
+  OrderQuantity Int
+  ExpectedDate  DateTime
+  ActualDate    DateTime?
+  //Relation
+  ProductIDs    String[]  @db.ObjectId
+  Products      Product?  @relation(fields: [ProductIDs], references: [ProductID])
+  OrderID       String    @db.ObjectId
+  Order         Order     @relation(fields: [OrderID], references: [OrderID])
+}
+
+model Transfer {
+  TransferID       String    @id @default(auto()) @map("_id") @db.ObjectId
+  TransferQuantity Int
+  SentDate         DateTime
+  RecievedDate     DateTime?
+  //Relation
+  ProductID        String    @db.ObjectId
+  Product          Product   @relation(fields: [ProductID], references: [ProductID])
+  OutWarehouseID   String    @db.ObjectId
+  OutWarehouse     Warehouse @relation("OutWarehouseTransfers", fields: [OutWarehouseID], references: [WarehouseID])
+  InWarehouseID    String    @db.ObjectId
+  InWarehouse      Warehouse @relation("InWarehouseTransfers", fields: [InWarehouseID], references: [WarehouseID])
+}
+
+model Payment {
+  PaymentID          String    @id @default(auto()) @map("_id") @db.ObjectId
+  PaymentAmount      Float
+  PaymentStatus      Status    @default(INITIATED)
+  PaymentMode        Mode?
+  PaymentDescription String?
+  //Relation
+  OrderID            String?   @db.ObjectId
+  Order              Order?    @relation(fields: [OrderID], references: [OrderID])
+  DeileveryID        String?   @db.ObjectId
+  Dilevery           Delivery? @relation(fields: [DeileveryID], references: [DeliveryID])
+}
+
+model Transaction {
+  TransactionID     String @id @default(auto()) @map("_id") @db.ObjectId
+  TransactionDetail String
+  //Relation
+  UserID            String @db.ObjectId
+  TransactionOwner  User   @relation(fields: [UserID], references: [userId])
+}
