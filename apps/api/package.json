@@ -1,18 +1,20 @@
 {
-  "name": "server",
+  "name": "@mesh/api",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
+    "dev": "nodemon index.ts",
     "start": "nodemon index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "check-types": "tsc --noEmit",
+    "prisma:generate": "prisma generate",
+    "prisma:seed": "ts-node prisma/seed.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
   },
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
+    "@mesh/types": "*",
     "@prisma/client": "^5.17.0",
     "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.17",
@@ -28,6 +30,8 @@
     "typescript": "^5.5.4"
   },
   "devDependencies": {
-    "@faker-js/faker": "^8.4.1"
+    "@faker-js/faker": "^8.4.1",
+    "@mesh/tsconfig": "*",
+    "ts-node": "^10.9.2"
   }
 }

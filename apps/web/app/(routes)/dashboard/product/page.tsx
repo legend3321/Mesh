@@ -5,24 +5,7 @@ import api from "@/app/assets/api";
 import { Button } from "@/components/ui/button";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import ProductTable from "@/app/components/ProductTable";
-
-interface Product {
-  ProductID: string;
-  ProductCode: string;
-  BarCode: string;
-  ProductName: string;
-  ProductDescription: string;
-  ProductCategory: string;
-  ReorderQuantity?: number;
-  PackedWeight?: number;
-  PackedHeight?: number;
-  PackedWidth?: number;
-  PackedDepth?: number;
-  Refrigerated?: boolean;
-  CostPrice: number;
-  SellPrice: number;
-  MaxretailPrice: number;
-}
+import type { Product } from "@mesh/types";
 
 const Page: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);

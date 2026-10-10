@@ -37,24 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-interface Product {
-  ProductID: string;
-  ProductCode: string;
-  BarCode: string;
-  ProductName: string;
-  ProductDescription: string;
-  ProductCategory: string;
-  ReorderQuantity?: number;
-  PackedWeight?: number;
-  PackedHeight?: number;
-  PackedWidth?: number;
-  PackedDepth?: number;
-  Refrigerated?: boolean;
-  CostPrice: number;
-  SellPrice: number;
-  MaxretailPrice: number;
-}
+import type { Product } from "@mesh/types";
 
 const columns: ColumnDef<unknown, any>[] = [
   {

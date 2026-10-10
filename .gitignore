@@ -19,9 +19,13 @@ dist/
 build/
 .next/
 out/
+.turbo/
 
 # IDE / OS metadata
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
