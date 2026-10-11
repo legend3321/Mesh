@@ -7,12 +7,26 @@ export type Status = "INITIATED" | "PROCESSING" | "COMPLETED" | "CANCELLED";
 // Payment method
 export type Mode = "ONLINE" | "OFFLINE" | "CHEQUE";
 
+// Company entity (Multi-Tenancy)
+export interface Company {
+  companyId: string;
+  companyName: string;
+  companyCode: string;
+  companyDomain?: string | null;
+  logoUrl?: string | null;
+  description?: string | null;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+}
+
 // User entity
 export interface User {
   userId: string;
   userEmail: string;
   userName: string;
   userRole?: Role | null;
+  companyId?: string | null;
+  company?: Company | null;
 }
 
 // Product entity
@@ -32,6 +46,8 @@ export interface Product {
   CostPrice: number;
   SellPrice: number;
   MaxretailPrice: number;
+  companyId?: string | null;
+  company?: Company | null;
 }
 
 // Location entity
@@ -39,6 +55,8 @@ export interface Location {
   LocationID: string;
   LocationName: string;
   LocationAddress: string;
+  companyId?: string | null;
+  company?: Company | null;
 }
 
 // Warehouse entity
@@ -48,6 +66,8 @@ export interface Warehouse {
   isRefrigerated: boolean;
   LocationID: string;
   Location?: Location;
+  companyId?: string | null;
+  company?: Company | null;
 }
 
 // Inventory entity
@@ -61,6 +81,8 @@ export interface Inventory {
   Product?: Product;
   WarehouseID: string;
   Warehouse?: Warehouse;
+  companyId?: string | null;
+  company?: Company | null;
 }
 
 // Customer entity
@@ -68,6 +90,8 @@ export interface Customer {
   CustomerID: string;
   CustomerName: string;
   CustomerAddress: string;
+  companyId?: string | null;
+  company?: Company | null;
 }
 
 // Delivery entity
@@ -76,6 +100,8 @@ export interface Delivery {
   SalesDate: string | Date;
   CustomerID: string;
   Customer?: Customer;
+  companyId?: string | null;
+  company?: Company | null;
 }
 
 // DeliveryDetail entity
@@ -95,6 +121,8 @@ export interface Provider {
   ProviderID: string;
   ProviderName: string;
   ProviderAddress: string;
+  companyId?: string | null;
+  company?: Company | null;
 }
 
 // Order entity
@@ -103,6 +131,8 @@ export interface Order {
   OrderDate: string | Date;
   ProviderID: string;
   Provider?: Provider;
+  companyId?: string | null;
+  company?: Company | null;
 }
 
 // OrderDetail entity
@@ -128,6 +158,8 @@ export interface Transfer {
   OutWarehouse?: Warehouse;
   InWarehouseID: string;
   InWarehouse?: Warehouse;
+  companyId?: string | null;
+  company?: Company | null;
 }
 
 // Payment entity
@@ -141,6 +173,8 @@ export interface Payment {
   Order?: Order | null;
   DeliveryID?: string | null;
   Delivery?: Delivery | null;
+  companyId?: string | null;
+  company?: Company | null;
 }
 
 // Transaction entity
@@ -149,6 +183,8 @@ export interface Transaction {
   TransactionDetail: string;
   UserID: string;
   TransactionOwner?: User;
+  companyId?: string | null;
+  company?: Company | null;
 }
 
 // Auth credentials & payload
@@ -160,4 +196,82 @@ export interface LoginCredentials {
 export interface AuthResponse {
   user: User;
   authToken: string;
+}
+
+// Machine Learning Stockout Risk & Forecast Types (XGBoost & Scikit-Learn)
+export type RiskLevel = "CRITICAL" | "WARNING" | "SAFE";
+
+export interface StockoutForecastItem {
+  inventoryId: string;
+  productId: string;
+  productCode: string;
+  productName: string;
+  category: string;
+  warehouseId: string;
+  warehouseName: string;
+  currentStock: number;
+  reorderPoint: number;
+  minStockLevel: number;
+  maxStockLevel: number;
+  dailyVelocity: number;
+  leadTimeDays: number;
+  daysOfCoverage: number;
+  stockoutRisk: number; // 0.0 - 1.0 probability
+  riskLevel: RiskLevel;
+  predictedDaysToStockout: number;
+  recommendedReorderQty: number;
+  unitCost: number;
+  estimatedReplenishmentCost: number;
+  preferredProviderId?: string | null;
+  preferredProviderName?: string | null;
+  featureFactors?: {
+    daysOfCoverageWeight?: number;
+    leadTimeDemandWeight?: number;
+    safetyBufferWeight?: number;
+    dailyVelocityWeight?: number;
+  };
+}
+
+export interface ForecastSummary {
+  totalSkusEvaluated: number;
+  criticalSkusCount: number;
+  warningSkusCount: number;
+  safeSkusCount: number;
+  projectedStockoutValue: number;
+  averageDaysOfCoverage: number;
+  modelMetadata: {
+    algorithm: string;
+    confidenceScore: number;
+    topFeatureImportances: Record<string, number>;
+    leadTimeAssumedDays: number;
+  };
+}
+
+export interface ForecastApiResponse {
+  status: string;
+  items: StockoutForecastItem[];
+  summary: ForecastSummary;
+}
+
+export interface AutoPOResultItem {
+  orderId: string;
+  orderDetailId: string;
+  productId: string;
+  productCode: string;
+  productName: string;
+  quantity: number;
+  unitCost: number;
+  totalCost: number;
+  providerId: string;
+  providerName: string;
+  expectedDate: string;
+  stockoutRiskPrior: number;
+}
+
+export interface AutoPOResponse {
+  success: boolean;
+  message: string;
+  createdOrdersCount: number;
+  totalCapitalCommitted: number;
+  orders: AutoPOResultItem[];
 }

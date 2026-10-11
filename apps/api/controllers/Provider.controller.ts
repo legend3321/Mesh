@@ -1,10 +1,18 @@
 import { Request, Response } from "express";
 import { prisma } from "../index";
+import { getTenantId } from "../middleware/App.middleware";
 
 const addProvider = async (req: Request, res: Response) => {
   try {
+    const tenantId = req.body.companyId || getTenantId(req);
+    const data = {
+      ...req.body,
+      ...(tenantId && { companyId: tenantId }),
+    };
+
     const newProvider = await prisma.provider.create({
-      data: req.body,
+      data,
+      include: { company: true },
     });
 
     res.status(200).json(newProvider);
@@ -21,6 +29,7 @@ const editProvider = async (req: Request, res: Response) => {
         ProviderID: ProviderID,
       },
       data: updateData,
+      include: { company: true },
     });
 
     res.status(200).json(updatedProvider);
@@ -31,7 +40,11 @@ const editProvider = async (req: Request, res: Response) => {
 
 const getAllProviders = async (req: Request, res: Response) => {
   try {
-    const Providers = await prisma.provider.findMany();
+    const tenantId = getTenantId(req);
+    const Providers = await prisma.provider.findMany({
+      where: tenantId ? { companyId: tenantId } : {},
+      include: { company: true },
+    });
 
     res.status(200).json(Providers);
   } catch (exception) {
@@ -46,6 +59,7 @@ const getProvider = async (
   try {
     const Provider = await prisma.provider.findMany({
       where: { ProviderID: req.params.ProviderID },
+      include: { company: true },
     });
 
     res.status(200).json(Provider);

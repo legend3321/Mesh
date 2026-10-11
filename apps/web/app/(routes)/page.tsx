@@ -1,24 +1,29 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
-import Link from "next/link";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import MeshLogoSvg from "@/app/components/MeshLogoSvg";
 
 export default function Home() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
-  if (session) redirect("/dashboard");
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/dashboard");
+    } else if (status === "unauthenticated") {
+      router.replace("/login");
+    }
+  }, [status, router]);
 
   return (
-    <section className="bg-gradient-to-br from-blue-950 from-50%  to-blue-700  h-screen flex  items-center justify-center">
-      <div className="md:w-4/12 xs:w-11/12 p-16 rounded bg-white flex flex-col items-center justify-center">
-        <img src={"Icon Button.png"} alt="Logo" />
-        <h1 className="text-3xl">Mesh</h1>
-        <Link href={"/login"}>
-          <Button className="mt-5">Login</Button>
-        </Link>
+    <div className="min-h-screen bg-[#070B14] flex flex-col items-center justify-center text-white">
+      <div className="w-14 h-14 rounded-2xl bg-blue-600/30 border border-blue-400/30 flex items-center justify-center text-white shadow-xl animate-pulse mb-4">
+        <MeshLogoSvg size={32} />
       </div>
-    </section>
+      <h1 className="text-xl font-bold tracking-tight text-white">Mesh Enterprise</h1>
+      <p className="text-xs text-slate-400 mt-1">Initializing secure telemetry gateway...</p>
+    </div>
   );
 }

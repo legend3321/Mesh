@@ -1,10 +1,18 @@
 import { Request, Response } from "express";
 import { prisma } from "../index";
+import { getTenantId } from "../middleware/App.middleware";
 
 const addWarehouse = async (req: Request, res: Response) => {
   try {
+    const tenantId = req.body.companyId || getTenantId(req);
+    const data = {
+      ...req.body,
+      ...(tenantId && { companyId: tenantId }),
+    };
+
     const newWarehouse = await prisma.warehouse.create({
-      data: req.body,
+      data,
+      include: { Location: true, company: true },
     });
 
     res.status(200).json(newWarehouse);
@@ -21,6 +29,7 @@ const editWarehouse = async (req: Request, res: Response) => {
         WarehouseID: WarehouseID,
       },
       data: updateData,
+      include: { Location: true, company: true },
     });
 
     res.status(200).json(updatedWarehouse);
@@ -31,7 +40,11 @@ const editWarehouse = async (req: Request, res: Response) => {
 
 const getAllWarehouses = async (req: Request, res: Response) => {
   try {
-    const Warehouses = await prisma.warehouse.findMany();
+    const tenantId = getTenantId(req);
+    const Warehouses = await prisma.warehouse.findMany({
+      where: tenantId ? { companyId: tenantId } : {},
+      include: { Location: true, company: true },
+    });
 
     res.status(200).json(Warehouses);
   } catch (exception) {
@@ -46,6 +59,7 @@ const getWarehouse = async (
   try {
     const Warehouse = await prisma.warehouse.findMany({
       where: { WarehouseID: req.params.WarehouseID },
+      include: { Location: true, company: true },
     });
 
     res.status(200).json(Warehouse);

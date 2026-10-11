@@ -1,10 +1,18 @@
 import { Request, Response } from "express";
 import { prisma } from "../index";
+import { getTenantId } from "../middleware/App.middleware";
 
 const addCustomer = async (req: Request, res: Response) => {
   try {
+    const tenantId = req.body.companyId || getTenantId(req);
+    const data = {
+      ...req.body,
+      ...(tenantId && { companyId: tenantId }),
+    };
+
     const newCustomer = await prisma.customer.create({
-      data: req.body,
+      data,
+      include: { company: true },
     });
 
     res.status(200).json(newCustomer);
@@ -21,6 +29,7 @@ const editCustomer = async (req: Request, res: Response) => {
         CustomerID: CustomerID,
       },
       data: updateData,
+      include: { company: true },
     });
 
     res.status(200).json(updatedCustomer);
@@ -31,7 +40,11 @@ const editCustomer = async (req: Request, res: Response) => {
 
 const getAllCustomers = async (req: Request, res: Response) => {
   try {
-    const Customers = await prisma.customer.findMany();
+    const tenantId = getTenantId(req);
+    const Customers = await prisma.customer.findMany({
+      where: tenantId ? { companyId: tenantId } : {},
+      include: { company: true },
+    });
 
     res.status(200).json(Customers);
   } catch (exception) {
@@ -46,6 +59,7 @@ const getCustomer = async (
   try {
     const Customer = await prisma.customer.findMany({
       where: { CustomerID: req.params.CustomerID },
+      include: { company: true },
     });
 
     res.status(200).json(Customer);

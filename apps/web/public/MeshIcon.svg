@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" width="100%" height="100%">
+  <!-- Rounded container background -->
+  <rect width="100" height="100" rx="22" fill="#0B132B" />
+
+  <!-- Central Hub -->
+  <circle cx="50" cy="50" r="13" fill="#FFFFFF" />
+
+  <!-- Radiating Mesh Lines & Nodes -->
+  <!-- 1. North node -->
+  <line x1="50" y1="50" x2="42" y2="15" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" />
+  <circle cx="42" cy="15" r="6.5" fill="#FFFFFF" />
+
+  <!-- 2. North-Northeast node (inner) -->
+  <line x1="50" y1="50" x2="58" y2="28" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" />
+  <circle cx="58" cy="28" r="5.5" fill="#FFFFFF" />
+
+  <!-- 3. Northeast node (outer) -->
+  <line x1="50" y1="50" x2="84" y2="22" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" />
+  <circle cx="84" cy="22" r="6.5" fill="#FFFFFF" />
+
+  <!-- 4. East-Northeast node (inner) -->
+  <line x1="50" y1="50" x2="73" y2="46" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" />
+  <circle cx="73" cy="46" r="5.5" fill="#FFFFFF" />
+
+  <!-- 5. East-Southeast node (outer) -->
+  <line x1="50" y1="50" x2="86" y2="60" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" />
+  <circle cx="86" cy="60" r="6.5" fill="#FFFFFF" />
+
+  <!-- 6. South node (outer) -->
+  <line x1="50" y1="50" x2="54" y2="87" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" />
+  <circle cx="54" cy="87" r="6.5" fill="#FFFFFF" />
+
+  <!-- 7. South-Southwest node (inner) -->
+  <line x1="50" y1="50" x2="31" y2="72" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" />
+  <circle cx="31" cy="72" r="6" fill="#FFFFFF" />
+
+  <!-- 8. West-Southwest node (inner) -->
+  <line x1="50" y1="50" x2="26" y2="52" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" />
+  <circle cx="26" cy="52" r="6" fill="#FFFFFF" />
+
+  <!-- 9. Northwest node (outer) -->
+  <line x1="50" y1="50" x2="16" y2="30" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" />
+  <circle cx="16" cy="30" r="6.5" fill="#FFFFFF" />
+</svg>

@@ -7,4 +7,10 @@ authRouter.post("/register", AuthController.createUser);
 authRouter.post("/login", AuthController.loginUser);
 authRouter.post("/update", verifyToken, AuthController.updateUser);
 
+// User administration routes
+authRouter.get("/users/getAll", verifyToken, AuthController.getAllUsers);
+authRouter.post("/users/add", verifyToken, AuthController.createUser);
+authRouter.patch("/users/edit", verifyToken, AuthController.updateUser);
+authRouter.delete("/users/delete/:userId", verifyToken, AuthController.deleteUser);
+
 export default authRouter;

@@ -16,21 +16,27 @@ import OrderDetailRouter from "./routes/OrderDetail.routes";
 import TransferRouter from "./routes/Transfer.routes";
 import PaymentRouter from "./routes/Payment.routes";
 import TransactionRouter from "./routes/Transaction.routes";
+import companyRouter from "./routes/Company.routes";
+import forecastRouter from "./routes/Forecast.routes";
 
-export const prisma = new PrismaClient();
 dotenv.config();
 
-const port = process.env.PORT;
+export const prisma = new PrismaClient();
+
+const port = process.env.PORT || 3001;
 const app = express();
 
 async function main() {
   app.use(express.json());
   app.use(cors());
   app.use("/api/auth/", authRouter);
+  app.use("/api/company/", companyRouter);
+  app.use("/api/forecast/", forecastRouter);
   app.use("/api/product/", productRouter);
   app.use("/api/location/", LocationRouter);
   app.use("/api/warehouse/", WarehouseRouter);
   app.use("/api/inventory/", InventoryRouter);
+  app.use("/api/customer/", CustomerRouter);
   app.use("/api/constumer/", CustomerRouter);
   app.use("/api/delivery/", DeliveryRouter);
   app.use("/api/deliveryDetail/", DeliveryDetailRouter);

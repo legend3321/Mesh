@@ -1,10 +1,22 @@
 import { Request, Response } from "express";
 import { prisma } from "../index";
+import { getTenantId } from "../middleware/App.middleware";
 
 const addInventory = async (req: Request, res: Response) => {
   try {
+    const tenantId = req.body.companyId || getTenantId(req);
+    const data = {
+      ...req.body,
+      ...(tenantId && { companyId: tenantId }),
+    };
+
     const newInventory = await prisma.inventory.create({
-      data: req.body,
+      data,
+      include: {
+        Product: true,
+        Warehouse: true,
+        company: true,
+      },
     });
 
     res.status(200).json(newInventory);
@@ -21,6 +33,11 @@ const editInventory = async (req: Request, res: Response) => {
         InventoryID: InventoryID,
       },
       data: updateData,
+      include: {
+        Product: true,
+        Warehouse: true,
+        company: true,
+      },
     });
 
     res.status(200).json(updatedInventory);
@@ -31,7 +48,15 @@ const editInventory = async (req: Request, res: Response) => {
 
 const getAllInventorys = async (req: Request, res: Response) => {
   try {
-    const Inventorys = await prisma.inventory.findMany();
+    const tenantId = getTenantId(req);
+    const Inventorys = await prisma.inventory.findMany({
+      where: tenantId ? { companyId: tenantId } : {},
+      include: {
+        Product: true,
+        Warehouse: true,
+        company: true,
+      },
+    });
 
     res.status(200).json(Inventorys);
   } catch (exception) {
@@ -46,6 +71,11 @@ const getInventory = async (
   try {
     const Inventory = await prisma.inventory.findMany({
       where: { InventoryID: req.params.InventoryID },
+      include: {
+        Product: true,
+        Warehouse: true,
+        company: true,
+      },
     });
 
     res.status(200).json(Inventory);

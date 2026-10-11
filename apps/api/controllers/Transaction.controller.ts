@@ -1,10 +1,21 @@
 import { Request, Response } from "express";
 import { prisma } from "../index";
+import { getTenantId } from "../middleware/App.middleware";
 
 const addTransaction = async (req: Request, res: Response) => {
   try {
+    const tenantId = req.body.companyId || getTenantId(req);
+    const data = {
+      ...req.body,
+      ...(tenantId && { companyId: tenantId }),
+    };
+
     const newTransaction = await prisma.transaction.create({
-      data: req.body,
+      data,
+      include: {
+        TransactionOwner: true,
+        company: true,
+      },
     });
 
     res.status(200).json(newTransaction);
@@ -21,6 +32,10 @@ const editTransaction = async (req: Request, res: Response) => {
         TransactionID: TransactionID,
       },
       data: updateData,
+      include: {
+        TransactionOwner: true,
+        company: true,
+      },
     });
 
     res.status(200).json(updatedTransaction);
@@ -31,7 +46,14 @@ const editTransaction = async (req: Request, res: Response) => {
 
 const getAllTransactions = async (req: Request, res: Response) => {
   try {
-    const Transactions = await prisma.transaction.findMany();
+    const tenantId = getTenantId(req);
+    const Transactions = await prisma.transaction.findMany({
+      where: tenantId ? { companyId: tenantId } : {},
+      include: {
+        TransactionOwner: true,
+        company: true,
+      },
+    });
 
     res.status(200).json(Transactions);
   } catch (exception) {
@@ -46,6 +68,10 @@ const getTransaction = async (
   try {
     const Transaction = await prisma.transaction.findMany({
       where: { TransactionID: req.params.TransactionID },
+      include: {
+        TransactionOwner: true,
+        company: true,
+      },
     });
 
     res.status(200).json(Transaction);

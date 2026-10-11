@@ -2,7 +2,6 @@
   "extends": "@mesh/tsconfig/node.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./",
     "paths": {
       "@mesh/types": ["../../packages/types/src/index.ts"]
     }

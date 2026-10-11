@@ -1,10 +1,18 @@
 import { Request, Response } from "express";
 import { prisma } from "../index";
+import { getTenantId } from "../middleware/App.middleware";
 
 const addLocation = async (req: Request, res: Response) => {
   try {
+    const tenantId = req.body.companyId || getTenantId(req);
+    const data = {
+      ...req.body,
+      ...(tenantId && { companyId: tenantId }),
+    };
+
     const newLocation = await prisma.location.create({
-      data: req.body,
+      data,
+      include: { company: true },
     });
 
     res.status(200).json(newLocation);
@@ -27,6 +35,7 @@ const editLocation = async (req: Request, res: Response) => {
         LocationID: LocationID,
       },
       data: updateData,
+      include: { company: true },
     });
 
     res.status(200).json(updatedLocation);
@@ -38,7 +47,11 @@ const editLocation = async (req: Request, res: Response) => {
 
 const getAllLocations = async (req: Request, res: Response) => {
   try {
-    const Locations = await prisma.location.findMany();
+    const tenantId = getTenantId(req);
+    const Locations = await prisma.location.findMany({
+      where: tenantId ? { companyId: tenantId } : {},
+      include: { company: true },
+    });
 
     res.status(200).json(Locations);
   } catch (exception) {
@@ -53,6 +66,7 @@ const getLocation = async (
   try {
     const Location = await prisma.location.findMany({
       where: { LocationID: req.params.LocationID },
+      include: { company: true },
     });
 
     res.status(200).json(Location);
@@ -66,7 +80,7 @@ const deleteLocation = async (
   res: Response
 ) => {
   try {
-    const Location = prisma.location.delete({
+    const Location = await prisma.location.delete({
       where: {
         LocationID: req.params.LocationID,
       },

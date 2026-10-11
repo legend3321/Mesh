@@ -1,10 +1,19 @@
 import { Request, Response } from "express";
 import { prisma } from "../index";
+import { getTenantId } from "../middleware/App.middleware";
 
 const addOrder = async (req: Request, res: Response) => {
   try {
+    const tenantId = req.body.companyId || getTenantId(req);
+    const data = {
+      ...req.body,
+      OrderDate: req.body.OrderDate ? new Date(req.body.OrderDate) : new Date(),
+      ...(tenantId && { companyId: tenantId }),
+    };
+
     const newOrder = await prisma.order.create({
-      data: req.body,
+      data,
+      include: { Provider: true, company: true },
     });
 
     res.status(200).json(newOrder);
@@ -16,11 +25,15 @@ const addOrder = async (req: Request, res: Response) => {
 const editOrder = async (req: Request, res: Response) => {
   try {
     const { OrderID, ...updateData } = req.body;
+    if (updateData.OrderDate) {
+      updateData.OrderDate = new Date(updateData.OrderDate);
+    }
     const updatedOrder = await prisma.order.update({
       where: {
         OrderID: OrderID,
       },
       data: updateData,
+      include: { Provider: true, company: true },
     });
 
     res.status(200).json(updatedOrder);
@@ -31,7 +44,11 @@ const editOrder = async (req: Request, res: Response) => {
 
 const getAllOrders = async (req: Request, res: Response) => {
   try {
-    const Orders = await prisma.order.findMany();
+    const tenantId = getTenantId(req);
+    const Orders = await prisma.order.findMany({
+      where: tenantId ? { companyId: tenantId } : {},
+      include: { Provider: true, company: true },
+    });
 
     res.status(200).json(Orders);
   } catch (exception) {
@@ -43,6 +60,7 @@ const getOrder = async (req: Request<{ OrderID: string }>, res: Response) => {
   try {
     const Order = await prisma.order.findMany({
       where: { OrderID: req.params.OrderID },
+      include: { Provider: true, company: true },
     });
 
     res.status(200).json(Order);

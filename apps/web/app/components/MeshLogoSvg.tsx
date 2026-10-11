@@ -1,0 +1,62 @@
+"use client";
+
+import React from "react";
+
+interface MeshLogoProps extends React.SVGProps<SVGSVGElement> {
+  size?: number;
+  className?: string;
+}
+
+export default function MeshLogoSvg({ size = 28, className = "", ...props }: MeshLogoProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 100 100"
+      width={size}
+      height={size}
+      fill="none"
+      className={className}
+      {...props}
+    >
+      {/* Central Hub */}
+      <circle cx="50" cy="50" r="13" fill="currentColor" />
+
+      {/* Radiating Mesh Lines & Nodes */}
+      {/* 1. North node */}
+      <line x1="50" y1="50" x2="42" y2="15" stroke="currentColor" stroke-width="4.5" strokeLinecap="round" />
+      <circle cx="42" cy="15" r="6.5" fill="currentColor" />
+
+      {/* 2. North-Northeast node (inner) */}
+      <line x1="50" y1="50" x2="58" y2="28" stroke="currentColor" stroke-width="4.5" strokeLinecap="round" />
+      <circle cx="58" cy="28" r="5.5" fill="currentColor" />
+
+      {/* 3. Northeast node (outer) */}
+      <line x1="50" y1="50" x2="84" y2="22" stroke="currentColor" stroke-width="4.5" strokeLinecap="round" />
+      <circle cx="84" cy="22" r="6.5" fill="currentColor" />
+
+      {/* 4. East-Northeast node (inner) */}
+      <line x1="50" y1="50" x2="73" y2="46" stroke="currentColor" stroke-width="4.5" strokeLinecap="round" />
+      <circle cx="73" cy="46" r="5.5" fill="currentColor" />
+
+      {/* 5. East-Southeast node (outer) */}
+      <line x1="50" y1="50" x2="86" y2="60" stroke="currentColor" stroke-width="4.5" strokeLinecap="round" />
+      <circle cx="86" cy="60" r="6.5" fill="currentColor" />
+
+      {/* 6. South node (outer) */}
+      <line x1="50" y1="50" x2="54" y2="87" stroke="currentColor" stroke-width="4.5" strokeLinecap="round" />
+      <circle cx="54" cy="87" r="6.5" fill="currentColor" />
+
+      {/* 7. South-Southwest node (inner) */}
+      <line x1="50" y1="50" x2="31" y2="72" stroke="currentColor" stroke-width="4.5" strokeLinecap="round" />
+      <circle cx="31" cy="72" r="6" fill="currentColor" />
+
+      {/* 8. West-Southwest node (inner) */}
+      <line x1="50" y1="50" x2="26" y2="52" stroke="currentColor" stroke-width="4.5" strokeLinecap="round" />
+      <circle cx="26" cy="52" r="6" fill="currentColor" />
+
+      {/* 9. Northwest node (outer) */}
+      <line x1="50" y1="50" x2="16" y2="30" stroke="currentColor" stroke-width="4.5" strokeLinecap="round" />
+      <circle cx="16" cy="30" r="6.5" fill="currentColor" />
+    </svg>
+  );
+}
