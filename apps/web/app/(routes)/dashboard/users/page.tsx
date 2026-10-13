@@ -118,27 +118,29 @@ export default function UserManagementPage() {
     switch (role) {
       case "SUPERADMIN":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300">
-            <Crown className="w-3 h-3 text-amber-600" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-600">
+            <span className="w-1.5 h-1.5 rounded-xs bg-amber-600 shrink-0" />
             SUPERADMIN
           </span>
         );
       case "ADMIN":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
-            <Shield className="w-3 h-3 text-purple-600" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-purple-600">
+            <span className="w-1.5 h-1.5 rounded-xs bg-purple-600 shrink-0" />
             ADMIN
           </span>
         );
       case "MANAGER":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-blue-600">
+            <span className="w-1.5 h-1.5 rounded-xs bg-blue-600 shrink-0" />
             MANAGER
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <span className="w-1.5 h-1.5 rounded-xs bg-slate-400 shrink-0" />
             EMPLOYEE
           </span>
         );

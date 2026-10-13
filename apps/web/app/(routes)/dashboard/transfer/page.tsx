@@ -202,11 +202,13 @@ export default function TransferPage() {
       header: "Transit State",
       render: (t) =>
         t.RecievedDate ? (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-teal-600">
+            <span className="w-1.5 h-1.5 rounded-xs bg-teal-600 shrink-0" />
             Received
           </span>
         ) : (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-600">
+            <span className="w-1.5 h-1.5 rounded-xs bg-amber-600 shrink-0" />
             In Transit
           </span>
         ),

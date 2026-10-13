@@ -44,9 +44,6 @@ import {
   Flag,
   Bookmark,
   Filter,
-  LayoutGrid,
-  List,
-  CalendarRange,
   RotateCcw,
   Check,
 } from "lucide-react";
@@ -93,7 +90,6 @@ export default function GenericEntityTable<T extends Record<string, any>>({
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
   const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
-  const [activeView, setActiveView] = useState<"list" | "board" | "calendar">("list");
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
 
   const autoSelectedRef = React.useRef(false);
@@ -109,34 +105,75 @@ export default function GenericEntityTable<T extends Record<string, any>>({
     }
   }, [initialId, data, idKey, onSelect]);
 
-  // Priority detection helper
-  const getPriorityBadge = (val: string) => {
-    const s = String(val).toUpperCase();
-    if (s.includes("CRIT") || s.includes("HIGH") || s.includes("ALERT")) {
+  // Status and priority colored text helper (with bullet dot indicator, no background boxes)
+  const renderStatusText = (val: string) => {
+    const s = String(val).trim().toUpperCase();
+
+    // Emerald / Teal - In Stock, Active, Completed, Delivered, Paid, Low risk/Safe
+    if (
+      s.includes("IN STOCK") ||
+      s.includes("DELIVER") ||
+      s.includes("PAID") ||
+      s.includes("COMPLET") ||
+      s.includes("ACTIVE") ||
+      s.includes("SAFE") ||
+      s.includes("NORMAL") ||
+      s.includes("GOOD") ||
+      s === "LOW" ||
+      s === "SUCCESS"
+    ) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/80">
-          <Flag className="w-3 h-3 text-rose-600 fill-rose-600" />
-          High
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-teal-600">
+          <span className="w-1.5 h-1.5 rounded-xs bg-teal-600 shrink-0" />
+          {val}
         </span>
       );
     }
-    if (s.includes("MED") || s.includes("WARN")) {
+
+    // Amber / Orange - Low Stock, Warning, Medium, Pending, Processing, In Transit
+    if (
+      s.includes("LOW STOCK") ||
+      s.includes("WARN") ||
+      s.includes("PEND") ||
+      s.includes("PROCESS") ||
+      s.includes("TRANSIT") ||
+      s.includes("MED") ||
+      s.includes("REORDER")
+    ) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200/80">
-          <Flag className="w-3 h-3 text-amber-600 fill-amber-600" />
-          Medium
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-600">
+          <span className="w-1.5 h-1.5 rounded-xs bg-amber-600 shrink-0" />
+          {val}
         </span>
       );
     }
-    if (s.includes("LOW") || s.includes("NORMAL") || s.includes("GOOD") || s.includes("ACTIVE")) {
+
+    // Rose / Red - Out of Stock, Critical, High, Alert, Cancelled, Failed, Overdue
+    if (
+      s.includes("OUT OF STOCK") ||
+      s.includes("CRIT") ||
+      s.includes("HIGH") ||
+      s.includes("ALERT") ||
+      s.includes("CANCEL") ||
+      s.includes("FAIL") ||
+      s.includes("OVERDUE") ||
+      s.includes("REFUND")
+    ) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/80">
-          <Flag className="w-3 h-3 text-emerald-600 fill-emerald-600" />
-          Low
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-rose-600">
+          <span className="w-1.5 h-1.5 rounded-xs bg-rose-600 shrink-0" />
+          {val}
         </span>
       );
     }
-    return null;
+
+    // Neutral / Slate - Inactive, Draft, Standalone, etc.
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <span className="w-1.5 h-1.5 rounded-xs bg-slate-400 shrink-0" />
+        {val}
+      </span>
+    );
   };
 
   const columns = useMemo<ColumnDef<T>[]>(() => {
@@ -222,10 +259,14 @@ export default function GenericEntityTable<T extends Record<string, any>>({
           const strVal = String(val);
           const colKey = String(col.key).toLowerCase();
 
-          // Auto priority badge
-          if (colKey.includes("priority") || colKey.includes("risk") || colKey.includes("status")) {
-            const badge = getPriorityBadge(strVal);
-            if (badge) return badge;
+          // Auto status, priority, risk, state colored text
+          if (
+            colKey.includes("priority") ||
+            colKey.includes("risk") ||
+            colKey.includes("status") ||
+            colKey.includes("state")
+          ) {
+            return renderStatusText(strVal);
           }
 
           // Auto code / SKU styling
@@ -436,48 +477,6 @@ export default function GenericEntityTable<T extends Record<string, any>>({
               <span>Reset</span>
             </button>
           )}
-        </div>
-
-        {/* View Mode Segmented Controls (matching screenshot) */}
-        <div className="flex items-center gap-2 self-end lg:self-center">
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 shadow-2xs">
-            <button
-              type="button"
-              onClick={() => setActiveView("board")}
-              className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-                activeView === "board"
-                  ? "bg-white text-blue-700 shadow-2xs font-semibold"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span>Board</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveView("list")}
-              className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-                activeView === "list"
-                  ? "bg-white text-blue-700 shadow-2xs font-semibold"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <List className="w-3.5 h-3.5" />
-              <span>List</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveView("calendar")}
-              className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-                activeView === "calendar"
-                  ? "bg-white text-blue-700 shadow-2xs font-semibold"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <CalendarRange className="w-3.5 h-3.5" />
-              <span>Calendar</span>
-            </button>
-          </div>
         </div>
       </div>
 

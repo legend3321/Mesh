@@ -825,16 +825,27 @@ export default function SuperAdminDashboardPage() {
                         </td>
                         <td className="px-4 py-3">
                           <span
-                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                            className={`inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide ${
                               u.userRole === "SUPERADMIN"
-                                ? "bg-amber-50 text-amber-700 border-amber-300 font-mono"
+                                ? "text-amber-600"
                                 : u.userRole === "ADMIN"
-                                ? "bg-purple-50 text-purple-700 border-purple-200 font-mono"
+                                ? "text-purple-600"
                                 : u.userRole === "MANAGER"
-                                ? "bg-blue-50 text-blue-700 border-blue-200 font-mono"
-                                : "bg-slate-100 text-slate-700 border-slate-200 font-mono"
+                                ? "text-blue-600"
+                                : "text-slate-500"
                             }`}
                           >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-xs shrink-0 ${
+                                u.userRole === "SUPERADMIN"
+                                  ? "bg-amber-600"
+                                  : u.userRole === "ADMIN"
+                                  ? "bg-purple-600"
+                                  : u.userRole === "MANAGER"
+                                  ? "bg-blue-600"
+                                  : "bg-slate-400"
+                              }`}
+                            />
                             {u.userRole || "EMPLOYEE"}
                           </span>
                         </td>

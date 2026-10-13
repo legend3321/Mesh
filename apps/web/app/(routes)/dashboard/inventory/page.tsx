@@ -165,18 +165,23 @@ export default function InventoryPage() {
       render: (inv) => {
         const isLow = inv.InventoryAvailable <= inv.ReorderPoint;
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <span
-              className={`font-semibold text-sm ${
-                isLow ? "text-amber-600 font-bold" : "text-emerald-700"
+              className={`font-semibold text-xs ${
+                isLow ? "text-amber-600 font-bold" : "text-slate-900"
               }`}
             >
               {inv.InventoryAvailable.toLocaleString()} units
             </span>
-            {isLow && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                <AlertCircle className="w-3 h-3" />
+            {isLow ? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-600">
+                <span className="w-1.5 h-1.5 rounded-xs bg-amber-600 shrink-0" />
                 Low Stock
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-teal-600">
+                <span className="w-1.5 h-1.5 rounded-xs bg-teal-600 shrink-0" />
+                In Stock
               </span>
             )}
           </div>

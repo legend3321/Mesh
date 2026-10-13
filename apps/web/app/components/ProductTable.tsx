@@ -30,9 +30,6 @@ import {
   Calendar,
   Flag,
   Bookmark,
-  LayoutGrid,
-  List,
-  CalendarRange,
   RotateCcw,
 } from "lucide-react";
 
@@ -77,7 +74,6 @@ export default function ProductTable({
   const [globalFilter, setGlobalFilter] = React.useState("");
   const [priorityFilter, setPriorityFilter] = React.useState("ALL");
   const [bookmarkedOnly, setBookmarkedOnly] = React.useState(false);
-  const [activeView, setActiveView] = React.useState<"list" | "board" | "calendar">("list");
   const [selectedRowIds, setSelectedRowIds] = React.useState<Set<string>>(new Set());
   const [pageSize, setPageSize] = React.useState(10);
 
@@ -168,7 +164,7 @@ export default function ProductTable({
       accessorKey: "ProductCategory",
       header: "Category",
       cell: ({ row }) => (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200/60">
+        <span className="text-xs font-medium text-slate-700">
           {row.original.ProductCategory}
         </span>
       ),
@@ -225,13 +221,14 @@ export default function ProductTable({
       cell: ({ row }) => {
         const isCold = row.original.Refrigerated;
         return isCold ? (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200/80">
-            <Thermometer className="w-3 h-3 text-amber-600" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-600">
+            <span className="w-1.5 h-1.5 rounded-xs bg-amber-600 shrink-0" />
             Cold Chain
           </span>
         ) : (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-50 text-slate-600 border border-slate-200/80">
-            Standard Ambient
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-teal-600">
+            <span className="w-1.5 h-1.5 rounded-xs bg-teal-600 shrink-0" />
+            Ambient
           </span>
         );
       },
@@ -417,48 +414,6 @@ export default function ProductTable({
               <span>Reset</span>
             </button>
           )}
-        </div>
-
-        {/* View Mode Segmented Controls */}
-        <div className="flex items-center gap-2 self-end lg:self-center">
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 shadow-2xs">
-            <button
-              type="button"
-              onClick={() => setActiveView("board")}
-              className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-                activeView === "board"
-                  ? "bg-white text-blue-700 shadow-2xs font-semibold"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span>Board</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveView("list")}
-              className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-                activeView === "list"
-                  ? "bg-white text-blue-700 shadow-2xs font-semibold"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <List className="w-3.5 h-3.5" />
-              <span>List</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveView("calendar")}
-              className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-                activeView === "calendar"
-                  ? "bg-white text-blue-700 shadow-2xs font-semibold"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <CalendarRange className="w-3.5 h-3.5" />
-              <span>Calendar</span>
-            </button>
-          </div>
         </div>
       </div>
 

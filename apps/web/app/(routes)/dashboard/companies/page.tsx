@@ -159,8 +159,8 @@ export default function CompanyManagementPage() {
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-slate-900">{row.companyName}</span>
                 {isCurrent && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                    <CheckCircle2 className="w-2.5 h-2.5" />
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-teal-600">
+                    <span className="w-1.5 h-1.5 rounded-xs bg-teal-600 shrink-0" />
                     Active
                   </span>
                 )}

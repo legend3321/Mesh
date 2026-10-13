@@ -690,14 +690,23 @@ export default function StockoutForecastPage() {
                       {/* XGBoost Risk Probability */}
                       <td className="py-3 px-4">
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border ${
+                          className={`inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide ${
                             isCritical
-                              ? "bg-red-50 text-red-700 border-red-200"
+                              ? "text-rose-600"
                               : isWarning
-                              ? "bg-amber-50 text-amber-700 border-amber-200"
-                              : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              ? "text-amber-600"
+                              : "text-teal-600"
                           }`}
                         >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-xs shrink-0 ${
+                              isCritical
+                                ? "bg-rose-600"
+                                : isWarning
+                                ? "bg-amber-600"
+                                : "bg-teal-600"
+                            }`}
+                          />
                           {Math.round(item.stockoutRisk * 100)}% {item.riskLevel}
                         </span>
                       </td>

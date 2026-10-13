@@ -143,13 +143,14 @@ export default function WarehousePage() {
       header: "Climate Control",
       render: (wh) =>
         wh.isRefrigerated ? (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-50 text-cyan-700 border border-cyan-200">
-            <Snowflake className="w-3 h-3 text-cyan-600" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-600">
+            <span className="w-1.5 h-1.5 rounded-xs bg-amber-600 shrink-0" />
             Refrigerated
           </span>
         ) : (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
-            Standard Ambient
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-teal-600">
+            <span className="w-1.5 h-1.5 rounded-xs bg-teal-600 shrink-0" />
+            Ambient
           </span>
         ),
     },

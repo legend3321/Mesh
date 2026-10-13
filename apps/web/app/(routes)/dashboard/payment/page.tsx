@@ -120,29 +120,29 @@ export default function PaymentPage() {
     switch (status) {
       case "COMPLETED":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-teal-600">
+            <span className="w-1.5 h-1.5 rounded-xs bg-teal-600 shrink-0" />
             Completed
           </span>
         );
       case "PROCESSING":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-            <Clock className="w-3 h-3 text-blue-600" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-600">
+            <span className="w-1.5 h-1.5 rounded-xs bg-amber-600 shrink-0" />
             Processing
           </span>
         );
       case "CANCELLED":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
-            <XCircle className="w-3 h-3 text-red-600" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-rose-600">
+            <span className="w-1.5 h-1.5 rounded-xs bg-rose-600 shrink-0" />
             Cancelled
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
-            <Clock className="w-3 h-3 text-slate-500" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <span className="w-1.5 h-1.5 rounded-xs bg-slate-400 shrink-0" />
             Initiated
           </span>
         );
