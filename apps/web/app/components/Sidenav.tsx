@@ -23,7 +23,6 @@ import {
   BrainCircuit,
   Crown,
   Network,
-  Bell,
   MoreVertical,
 } from "lucide-react";
 import Link from "next/link";
@@ -137,27 +136,14 @@ export default function Sidenav() {
           </Link>
 
           {!collapsed ? (
-            <div className="flex items-center gap-1.5">
-              {/* Notification Bell with Badge */}
-              <button
-                type="button"
-                className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-50 shadow-2xs relative transition-colors"
-                title="Notifications"
-              >
-                <Bell className="w-4 h-4" />
-                <span className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-white absolute top-1.5 right-1.5" />
-              </button>
-
-              {/* Desktop Collapse Toggle */}
-              <button
-                type="button"
-                onClick={toggleSidebar}
-                className="hidden sm:flex items-center justify-center p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors"
-                title="Collapse sidebar"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="hidden sm:flex items-center justify-center p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors"
+              title="Collapse sidebar"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
           ) : (
             <div className="hidden sm:flex justify-center mt-2 mb-1">
               <button
@@ -355,9 +341,9 @@ export default function Sidenav() {
         {renderNavContent()}
       </div>
 
-      {/* Desktop In-Flow Sidebar inside Framed Container */}
+      {/* Desktop In-Flow Sidebar Edge-to-Edge */}
       <aside
-        className={`hidden sm:flex flex-col justify-between shrink-0 h-full transition-all duration-300 ease-in-out bg-[#f8f9fa] border-r border-slate-200 ${
+        className={`hidden sm:flex flex-col justify-between shrink-0 h-screen sticky top-0 transition-all duration-300 ease-in-out bg-[#f8f9fa] border-r border-slate-200 ${
           collapsed ? "w-20" : "w-64"
         }`}
         aria-label="Sidebar"
