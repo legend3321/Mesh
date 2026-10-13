@@ -17,6 +17,8 @@ import TransferRouter from "./routes/Transfer.routes";
 import PaymentRouter from "./routes/Payment.routes";
 import TransactionRouter from "./routes/Transaction.routes";
 import companyRouter from "./routes/Company.routes";
+import companyGroupRouter from "./routes/CompanyGroup.routes";
+import superAdminRouter from "./routes/SuperAdmin.routes";
 import forecastRouter from "./routes/Forecast.routes";
 
 dotenv.config();
@@ -31,6 +33,8 @@ async function main() {
   app.use(cors());
   app.use("/api/auth/", authRouter);
   app.use("/api/company/", companyRouter);
+  app.use("/api/company-group/", companyGroupRouter);
+  app.use("/api/superadmin/", superAdminRouter);
   app.use("/api/forecast/", forecastRouter);
   app.use("/api/product/", productRouter);
   app.use("/api/location/", LocationRouter);

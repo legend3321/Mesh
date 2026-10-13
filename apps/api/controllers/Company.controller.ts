@@ -5,6 +5,7 @@ const getAllCompanies = async (req: Request, res: Response) => {
   try {
     const companies = await prisma.company.findMany({
       include: {
+        companyGroup: true,
         _count: {
           select: {
             users: true,
@@ -36,6 +37,7 @@ const getCompany = async (req: Request, res: Response) => {
     const company = await prisma.company.findUnique({
       where: { companyId },
       include: {
+        companyGroup: true,
         users: {
           select: {
             userId: true,
@@ -70,7 +72,7 @@ const getCompany = async (req: Request, res: Response) => {
 
 const createCompany = async (req: Request, res: Response) => {
   try {
-    const { companyName, companyCode, companyDomain, logoUrl, description } = req.body;
+    const { companyName, companyCode, companyDomain, logoUrl, description, companyGroupId } = req.body;
 
     if (!companyName) {
       return res.status(400).json({ error: "companyName is required" });
@@ -92,6 +94,10 @@ const createCompany = async (req: Request, res: Response) => {
         companyDomain: companyDomain || null,
         logoUrl: logoUrl || null,
         description: description || null,
+        companyGroupId: companyGroupId || null,
+      },
+      include: {
+        companyGroup: true,
       },
     });
 
@@ -112,7 +118,7 @@ const updateCompany = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "companyId is required" });
     }
 
-    const { companyName, companyCode, companyDomain, logoUrl, description } = req.body;
+    const { companyName, companyCode, companyDomain, logoUrl, description, companyGroupId } = req.body;
 
     const updated = await prisma.company.update({
       where: { companyId },
@@ -122,6 +128,10 @@ const updateCompany = async (req: Request, res: Response) => {
         ...(companyDomain !== undefined && { companyDomain }),
         ...(logoUrl !== undefined && { logoUrl }),
         ...(description !== undefined && { description }),
+        ...(companyGroupId !== undefined && { companyGroupId: companyGroupId || null }),
+      },
+      include: {
+        companyGroup: true,
       },
     });
 

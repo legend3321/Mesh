@@ -47,13 +47,23 @@ type FormData = z.infer<typeof FormSchema>;
 
 export const DEMO_ACCOUNTS = [
   {
+    company: "Mesh Global Holdings",
+    companyCode: "SUPER-00",
+    role: "SUPERADMIN",
+    name: "Ujjwal Chaudhary (SuperAdmin)",
+    email: "superadmin@mesh.com",
+    password: "admin123",
+    tag: "Platform SuperAdmin (Me)",
+    accent: "from-amber-500 to-purple-600",
+  },
+  {
     company: "Apex Logistics",
     companyCode: "APEX-01",
     role: "ADMIN",
     name: "Ujjwal Chaudhary",
     email: "admin@mesh.com",
     password: "admin123",
-    tag: "Apex Corp Super-Admin",
+    tag: "Apex Corp Admin",
     accent: "from-blue-600 to-indigo-600",
   },
   {
@@ -76,28 +86,18 @@ export const DEMO_ACCOUNTS = [
     tag: "Starlight Global Admin",
     accent: "from-purple-600 to-pink-600",
   },
-  {
-    company: "Starlight Retail",
-    companyCode: "STAR-02",
-    role: "STAFF",
-    name: "Chloe Bennett",
-    email: "starlight.staff@mesh.com",
-    password: "admin123",
-    tag: "Starlight Operations Staff",
-    accent: "from-amber-600 to-orange-600",
-  },
 ];
 
 export default function LoginForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [activePersona, setActivePersona] = useState<string | null>("admin@mesh.com");
+  const [activePersona, setActivePersona] = useState<string | null>("superadmin@mesh.com");
 
   const form = useForm<FormData>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      userEmail: "admin@mesh.com",
+      userEmail: "superadmin@mesh.com",
       userPassword: "admin123",
     },
   });
@@ -139,7 +139,11 @@ export default function LoginForm() {
         description: "Launching Mesh Enterprise Command Center...",
       });
 
-      router.push("/dashboard");
+      if (userEmail.toLowerCase().includes("superadmin")) {
+        router.push("/dashboard/superadmin");
+      } else {
+        router.push("/dashboard");
+      }
       router.refresh();
     } catch (error: any) {
       console.error("Login Failed:", error);
@@ -223,8 +227,10 @@ export default function LoginForm() {
                       {demo.company}
                     </span>
                     <span
-                      className={`text-[9px] font-bold px-1 py-0.2 rounded font-mono ${
-                        demo.role === "ADMIN"
+                      className={`text-[9px] font-bold px-1.5 py-0.2 rounded font-mono ${
+                        demo.role === "SUPERADMIN"
+                          ? "bg-gradient-to-r from-amber-500/30 to-purple-500/30 text-amber-300 border border-amber-400/40"
+                          : demo.role === "ADMIN"
                           ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
                           : demo.role === "MANAGER"
                           ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"

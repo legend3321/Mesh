@@ -10,6 +10,7 @@ import {
   Globe,
   CheckCircle2,
   ArrowRight,
+  Network,
 } from "lucide-react";
 import GenericEntityTable, { ColumnConfig } from "@/app/components/crud/GenericEntityTable";
 import GenericEntityDrawer, { DrawerField } from "@/app/components/crud/GenericEntityDrawer";
@@ -39,7 +40,8 @@ export default function CompanyManagementPage() {
   const [targetItem, setTargetItem] = useState<Company | null>(null);
 
   const currentUserRole = ((session?.user as any)?.userRole || "EMPLOYEE") as Role;
-  const isAdmin = currentUserRole === "ADMIN";
+  const isSuperAdmin = currentUserRole === "SUPERADMIN";
+  const isAdmin = currentUserRole === "ADMIN" || isSuperAdmin;
 
   useEffect(() => {
     fetchCompanies();
@@ -178,6 +180,19 @@ export default function CompanyManagementPage() {
           {row.companyCode}
         </span>
       ),
+    },
+    {
+      key: "companyGroupId",
+      header: "Corporate Group",
+      render: (row) =>
+        row.companyGroup ? (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+            <Network className="w-3 h-3 text-amber-600" />
+            {row.companyGroup.groupName}
+          </span>
+        ) : (
+          <span className="text-xs text-slate-400 italic">Independent</span>
+        ),
     },
     {
       key: "description",

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import api from "@/app/assets/api";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw, UserCheck, Shield, Key, Mail, Lock } from "lucide-react";
+import { Plus, RefreshCw, UserCheck, Shield, Key, Mail, Lock, Crown } from "lucide-react";
 import GenericEntityTable, { ColumnConfig } from "@/app/components/crud/GenericEntityTable";
 import GenericEntityDrawer, { DrawerField } from "@/app/components/crud/GenericEntityDrawer";
 import GenericEntityModal, { ModalFormField } from "@/app/components/crud/GenericEntityModal";
@@ -26,7 +26,8 @@ export default function UserManagementPage() {
   const [targetItem, setTargetItem] = useState<User | null>(null);
 
   const currentUserRole = ((session?.user as any)?.userRole || "EMPLOYEE") as Role;
-  const isAdmin = currentUserRole === "ADMIN";
+  const isSuperAdmin = currentUserRole === "SUPERADMIN";
+  const isAdmin = currentUserRole === "ADMIN" || isSuperAdmin;
 
   useEffect(() => {
     fetchUsers();
@@ -115,6 +116,13 @@ export default function UserManagementPage() {
 
   const getRoleBadge = (role?: Role | null) => {
     switch (role) {
+      case "SUPERADMIN":
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300">
+            <Crown className="w-3 h-3 text-amber-600" />
+            SUPERADMIN
+          </span>
+        );
       case "ADMIN":
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
@@ -258,7 +266,10 @@ export default function UserManagementPage() {
       required: true,
       defaultValue: targetItem?.userRole || "EMPLOYEE",
       options: [
-        { label: "ADMIN (Complete System Access + User Management)", value: "ADMIN" },
+        ...(isSuperAdmin
+          ? [{ label: "SUPERADMIN (Global Multi-Tenant Platform Control)", value: "SUPERADMIN" }]
+          : []),
+        { label: "ADMIN (Company Admin & User Management)", value: "ADMIN" },
         { label: "MANAGER (Operational & Inventory Control)", value: "MANAGER" },
         { label: "EMPLOYEE (Standard Staff & Logistics Access)", value: "EMPLOYEE" },
       ],

@@ -24,6 +24,38 @@ async function main() {
   await prisma.product.deleteMany({});
   await prisma.user.deleteMany({});
   await prisma.company.deleteMany({});
+  await prisma.companyGroup.deleteMany({});
+
+  console.log("Seeding company groups (conglomerates)...");
+  const apexGroup = await prisma.companyGroup.create({
+    data: {
+      groupName: "Apex Enterprise Holdings",
+      groupCode: "APEX-GRP",
+      industry: "Logistics, Cold Chain & Intermodal Freight",
+      country: "United States",
+      description: "Premier global freight, maritime transport, and autonomous distribution conglomerate.",
+    },
+  });
+
+  const starlightGroup = await prisma.companyGroup.create({
+    data: {
+      groupName: "Starlight Omnichannel Conglomerate",
+      groupCode: "STAR-GRP",
+      industry: "Luxury Retail & Consumer Electronics",
+      country: "United Kingdom",
+      description: "International luxury apparel, lifestyle brands, and connected consumer hardware.",
+    },
+  });
+
+  const nexusGroup = await prisma.companyGroup.create({
+    data: {
+      groupName: "Nexus Industrial Alliance",
+      groupCode: "NEXUS-GRP",
+      industry: "Precision Manufacturing & Aerospace Parts",
+      country: "Germany",
+      description: "High-spec robotics, tier-1 automotive components, and heavy industrial assembly.",
+    },
+  });
 
   console.log("Seeding companies (multi-tenant)...");
   const apexCompany = await prisma.company.create({
@@ -32,6 +64,17 @@ async function main() {
       companyCode: "APEX-01",
       companyDomain: "apexlogistics.com",
       description: "Global freight, cold chain, and high-velocity distribution enterprise.",
+      companyGroupId: apexGroup.companyGroupId,
+    },
+  });
+
+  const apexAirCompany = await prisma.company.create({
+    data: {
+      companyName: "Apex Air Freight Worldwide",
+      companyCode: "APEX-02",
+      companyDomain: "air.apexlogistics.com",
+      description: "Express air cargo, priority customs clearance, and aviation logistics.",
+      companyGroupId: apexGroup.companyGroupId,
     },
   });
 
@@ -41,11 +84,24 @@ async function main() {
       companyCode: "STAR-02",
       companyDomain: "starlight.io",
       description: "Omnichannel luxury retail, consumer electronics, and smart IoT fulfillment.",
+      companyGroupId: starlightGroup.companyGroupId,
     },
   });
 
-  console.log("Seeding multi-tenant users...");
+  console.log("Seeding multi-tenant users & SuperAdmin...");
   const hashedPassword = await bcrypt.hash("admin123", 10);
+
+  // Platform SuperAdmin
+  const superAdmin = await prisma.user.create({
+    data: {
+      userName: "Ujjwal Chaudhary (SuperAdmin)",
+      userEmail: "superadmin@mesh.com",
+      userPassword: hashedPassword,
+      userRole: Role.SUPERADMIN,
+      companyGroupId: apexGroup.companyGroupId,
+      companyId: apexCompany.companyId,
+    },
+  });
 
   // Apex Users
   const apexAdmin = await prisma.user.create({
@@ -54,6 +110,7 @@ async function main() {
       userEmail: "admin@mesh.com",
       userPassword: hashedPassword,
       userRole: Role.ADMIN,
+      companyGroupId: apexGroup.companyGroupId,
       companyId: apexCompany.companyId,
     },
   });
@@ -64,6 +121,7 @@ async function main() {
       userEmail: "manager@mesh.com",
       userPassword: hashedPassword,
       userRole: Role.MANAGER,
+      companyGroupId: apexGroup.companyGroupId,
       companyId: apexCompany.companyId,
     },
   });
@@ -74,6 +132,7 @@ async function main() {
       userEmail: "sarah.logistics@mesh.com",
       userPassword: hashedPassword,
       userRole: Role.EMPLOYEE,
+      companyGroupId: apexGroup.companyGroupId,
       companyId: apexCompany.companyId,
     },
   });
@@ -85,6 +144,7 @@ async function main() {
       userEmail: "starlight.admin@mesh.com",
       userPassword: hashedPassword,
       userRole: Role.ADMIN,
+      companyGroupId: starlightGroup.companyGroupId,
       companyId: starlightCompany.companyId,
     },
   });
@@ -95,6 +155,7 @@ async function main() {
       userEmail: "starlight.manager@mesh.com",
       userPassword: hashedPassword,
       userRole: Role.MANAGER,
+      companyGroupId: starlightGroup.companyGroupId,
       companyId: starlightCompany.companyId,
     },
   });
@@ -105,7 +166,30 @@ async function main() {
       userEmail: "starlight.staff@mesh.com",
       userPassword: hashedPassword,
       userRole: Role.EMPLOYEE,
+      companyGroupId: starlightGroup.companyGroupId,
       companyId: starlightCompany.companyId,
+    },
+  });
+
+  // Nexus Industrial Alliance Company & User
+  const nexusCompany = await prisma.company.create({
+    data: {
+      companyName: "Nexus Precision Robotics",
+      companyCode: "NEX-01",
+      companyDomain: "nexusrobotics.de",
+      description: "Autonomous industrial robotic arms, high-torque actuators, and smart sensors.",
+      companyGroupId: nexusGroup.companyGroupId,
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      userName: "Dr. Klaus Becker",
+      userEmail: "nexus.admin@mesh.com",
+      userPassword: hashedPassword,
+      userRole: Role.ADMIN,
+      companyGroupId: nexusGroup.companyGroupId,
+      companyId: nexusCompany.companyId,
     },
   });
 

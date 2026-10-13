@@ -14,6 +14,7 @@ datasource db {
 }
 
 enum Role {
+  SUPERADMIN
   ADMIN
   MANAGER
   EMPLOYEE
@@ -32,28 +33,49 @@ enum Mode {
   CHEQUE
 }
 
-model Company {
-  companyId     String       @id @default(auto()) @map("_id") @db.ObjectId
-  companyName   String
-  companyCode   String       @unique
-  companyDomain String?
-  logoUrl       String?
-  description   String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+model CompanyGroup {
+  companyGroupId String    @id @default(auto()) @map("_id") @db.ObjectId
+  groupName      String
+  groupCode      String    @unique
+  description    String?
+  logoUrl        String?
+  industry       String?
+  country        String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
   // Relations
-  users         User[]
-  products      Product[]
-  warehouses    Warehouse[]
-  locations     Location[]
-  inventories   Inventory[]
-  customers     Customer[]
-  providers     Provider[]
-  orders        Order[]
-  deliveries    Delivery[]
-  transfers     Transfer[]
-  payments      Payment[]
-  transactions  Transaction[]
+  companies      Company[]
+  users          User[]
+}
+
+model Company {
+  companyId      String        @id @default(auto()) @map("_id") @db.ObjectId
+  companyName    String
+  companyCode    String        @unique
+  companyDomain  String?
+  logoUrl        String?
+  description    String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Multi-Tenancy Grouping
+  companyGroupId String?       @db.ObjectId
+  companyGroup   CompanyGroup? @relation(fields: [companyGroupId], references: [companyGroupId])
+
+  // Relations
+  users          User[]
+  products       Product[]
+  warehouses     Warehouse[]
+  locations      Location[]
+  inventories    Inventory[]
+  customers      Customer[]
+  providers      Provider[]
+  orders         Order[]
+  deliveries     Delivery[]
+  transfers      Transfer[]
+  payments       Payment[]
+  transactions   Transaction[]
 }
 
 model User {
@@ -63,9 +85,13 @@ model User {
   userName         String
   userRole         Role?
   userRefreshToken String?
-  // Multi-Tenancy
+
+  // Multi-Tenancy Group & Company
+  companyGroupId   String?       @db.ObjectId
+  companyGroup     CompanyGroup? @relation(fields: [companyGroupId], references: [companyGroupId])
   companyId        String?       @db.ObjectId
   company          Company?      @relation(fields: [companyId], references: [companyId])
+
   // BackRelation
   Transaction      Transaction[]
 }

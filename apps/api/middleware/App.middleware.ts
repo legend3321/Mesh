@@ -46,4 +46,16 @@ const verifyToken = (
   }
 };
 
+export const requireSuperAdmin = (
+  req: RequestWithUser,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = req.user?.user || req.user;
+  if (!user || user.userRole !== "SUPERADMIN") {
+    return res.status(403).json({ error: "Access Denied: SuperAdmin privileges required." });
+  }
+  next();
+};
+
 export default verifyToken;

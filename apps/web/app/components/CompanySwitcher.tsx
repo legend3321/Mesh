@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Building2, Check, ChevronDown, Plus, Globe } from "lucide-react";
+import { Building2, Check, ChevronDown, Plus, Globe, Crown, Network } from "lucide-react";
 import { useCompany } from "./CompanyContext";
 import { useSidebar } from "./SidebarContext";
 import { useSession } from "next-auth/react";
@@ -21,7 +21,8 @@ export default function CompanySwitcher() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const currentUserRole = ((session?.user as any)?.userRole || "EMPLOYEE") as string;
-  const isAdmin = currentUserRole === "ADMIN";
+  const isSuperAdmin = currentUserRole === "SUPERADMIN";
+  const isAdmin = currentUserRole === "ADMIN" || isSuperAdmin;
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -134,6 +135,26 @@ export default function CompanySwitcher() {
           </div>
 
           <div className="max-h-60 overflow-y-auto py-1">
+            {/* Direct SuperAdmin Hub Link */}
+            {isSuperAdmin && (
+              <Link
+                href="/dashboard/superadmin"
+                onClick={() => setOpen(false)}
+                className="w-full flex items-center justify-between px-3 py-2 text-xs text-left bg-gradient-to-r from-amber-500/15 to-purple-500/15 hover:from-amber-500/25 hover:to-purple-500/25 text-amber-300 font-semibold border-b border-slate-800/80 transition-colors"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-6 h-6 rounded-md bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-400 shrink-0">
+                    <Crown className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="truncate">
+                    <p className="text-xs font-bold text-amber-300">SuperAdmin Control Plane</p>
+                    <p className="text-[10px] text-slate-400">Manage Groups & Users</p>
+                  </div>
+                </div>
+                <ChevronDown className="w-3.5 h-3.5 -rotate-90 text-amber-400" />
+              </Link>
+            )}
+
             {/* Global option for Admins */}
             {isAdmin && (
               <button
@@ -149,7 +170,7 @@ export default function CompanySwitcher() {
                   </div>
                   <div className="truncate">
                     <p className="text-xs font-medium">All Companies</p>
-                    <p className="text-[10px] text-slate-400">Global Admin View</p>
+                    <p className="text-[10px] text-slate-400">Aggregated Tenant View</p>
                   </div>
                 </div>
                 {isAllCompanies && <Check className="w-4 h-4 text-blue-400 shrink-0 ml-2" />}
@@ -182,7 +203,9 @@ export default function CompanySwitcher() {
                         </span>
                       </div>
                       <p className="text-[10px] text-slate-400 truncate">
-                        {company.companyDomain || "mesh enterprise"}
+                        {company.companyGroup?.groupName
+                          ? `${company.companyGroup.groupName}`
+                          : company.companyDomain || "mesh enterprise"}
                       </p>
                     </div>
                   </div>
@@ -194,9 +217,19 @@ export default function CompanySwitcher() {
             })}
           </div>
 
-          {/* Manage Companies Link for Admins */}
+          {/* Manage Links */}
           {isAdmin && (
-            <div className="pt-1.5 mt-1 border-t border-slate-800/80 px-2">
+            <div className="pt-1.5 mt-1 border-t border-slate-800/80 px-2 space-y-1">
+              {isSuperAdmin && (
+                <Link
+                  href="/dashboard/superadmin?tab=groups"
+                  onClick={() => setOpen(false)}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-amber-300 hover:text-white hover:bg-slate-800/70 rounded-lg transition-colors font-medium"
+                >
+                  <Network className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Manage Groups of Companies</span>
+                </Link>
+              )}
               <Link
                 href="/dashboard/companies"
                 onClick={() => setOpen(false)}

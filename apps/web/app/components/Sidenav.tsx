@@ -21,6 +21,8 @@ import {
   ShieldCheck,
   Building2,
   BrainCircuit,
+  Crown,
+  Network,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -36,9 +38,16 @@ export default function Sidenav() {
   const fullPath = usePathname();
 
   const currentUserRole = ((session?.user as any)?.userRole || "EMPLOYEE") as string;
-  const isAdmin = currentUserRole === "ADMIN";
+  const isSuperAdmin = currentUserRole === "SUPERADMIN";
+  const isAdmin = currentUserRole === "ADMIN" || isSuperAdmin;
 
   const links = [
+    ...(isSuperAdmin
+      ? [
+          { name: "SuperAdmin Hub", path: "/superadmin", icon: Crown },
+          { name: "Company Groups", path: "/superadmin?tab=groups", icon: Network },
+        ]
+      : []),
     { name: "Overview", path: "", icon: LayoutDashboard },
     ...(isAdmin
       ? [
@@ -222,7 +231,15 @@ export default function Sidenav() {
                       <p className="text-xs font-semibold text-white truncate">
                         {session?.user?.name || "Admin User"}
                       </p>
-                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30 shrink-0">
+                      <span
+                        className={`text-[10px] font-bold px-1.5 py-0.2 rounded shrink-0 border ${
+                          isSuperAdmin
+                            ? "bg-gradient-to-r from-amber-500/25 to-purple-500/25 text-amber-300 border-amber-400/40"
+                            : isAdmin
+                            ? "bg-purple-500/20 text-purple-300 border-purple-400/30"
+                            : "bg-blue-500/20 text-blue-300 border-blue-400/30"
+                        }`}
+                      >
                         {currentUserRole}
                       </span>
                     </div>

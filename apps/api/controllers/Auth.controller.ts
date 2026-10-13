@@ -12,16 +12,17 @@ interface RequestWithUser extends Request {
 
 const createUser = async (req: Request, res: Response) => {
   try {
-    const { userEmail, userPassword, userName, userRole, companyId } = req.body;
+    const { userEmail, userPassword, userName, userRole, companyId, companyGroupId } = req.body;
     const hashedPassword = await bcrypt.hash(userPassword || "mesh1234", 10);
     const tenantId = companyId || getTenantId(req);
 
     const user: Prisma.UserCreateInput = {
-      userEmail: userEmail,
+      userEmail: userEmail.trim().toLowerCase(),
       userPassword: hashedPassword,
       userName: userName,
       userRole: userRole || "EMPLOYEE",
       ...(tenantId && { company: { connect: { companyId: tenantId } } }),
+      ...(companyGroupId && { companyGroup: { connect: { companyGroupId } } }),
     };
     const newUser = await prisma.user.create({
       data: user,
@@ -32,6 +33,8 @@ const createUser = async (req: Request, res: Response) => {
         userRole: true,
         companyId: true,
         company: true,
+        companyGroupId: true,
+        companyGroup: true,
       },
     });
 
@@ -44,8 +47,10 @@ const createUser = async (req: Request, res: Response) => {
 const getAllUsers = async (req: Request, res: Response) => {
   try {
     const tenantId = getTenantId(req);
+    const showAll = req.query.all === "true" || tenantId === "all";
+
     const users = await prisma.user.findMany({
-      where: tenantId ? { companyId: tenantId } : {},
+      where: showAll ? {} : tenantId ? { companyId: tenantId } : {},
       select: {
         userId: true,
         userEmail: true,
@@ -53,6 +58,11 @@ const getAllUsers = async (req: Request, res: Response) => {
         userRole: true,
         companyId: true,
         company: true,
+        companyGroupId: true,
+        companyGroup: true,
+      },
+      orderBy: {
+        userName: "asc",
       },
     });
     res.status(200).json(users);
@@ -83,6 +93,7 @@ const loginUser = async (req: Request, res: Response) => {
       },
       include: {
         company: true,
+        companyGroup: true,
       },
     });
 
@@ -121,7 +132,7 @@ const loginUser = async (req: Request, res: Response) => {
 
 const updateUser = async (req: RequestWithUser, res: Response) => {
   try {
-    const { userId, userPassword, companyId, ...updateData } = req.body;
+    const { userId, userPassword, companyId, companyGroupId, ...updateData } = req.body;
 
     if (!userId && !req.body.userEmail) {
       return res.status(400).json({ error: "userId or userEmail is required" });
@@ -134,6 +145,9 @@ const updateUser = async (req: RequestWithUser, res: Response) => {
     if (companyId !== undefined) {
       dataToUpdate.companyId = companyId || null;
     }
+    if (companyGroupId !== undefined) {
+      dataToUpdate.companyGroupId = companyGroupId || null;
+    }
 
     const updatedUser = await prisma.user.update({
       where: userId ? { userId: userId } : { userEmail: req.body.userEmail },
@@ -145,6 +159,8 @@ const updateUser = async (req: RequestWithUser, res: Response) => {
         userRole: true,
         companyId: true,
         company: true,
+        companyGroupId: true,
+        companyGroup: true,
       },
     });
 

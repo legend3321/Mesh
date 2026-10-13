@@ -25,21 +25,33 @@ Built as a high-performance TypeScript monorepo with **Turborepo**, **Next.js 14
   - **1-Click & Batch Auto-PO Triggers**: Automatically provisions purchase orders for critical items.
   - **Full Ledger Integrity**: Transactionally creates `Order` (status `ORDERED` with estimated arrival date), `OrderDetail` (EOQ / batch sizing), `Payment` (status `PROCESSING`), and immutable audit `Transaction` logs.
 
-### 2. 🏢 B2B Multi-Tenancy Architecture
-- **Strict Tenant Isolation**:
-  - Data across all supply-chain entities is isolated by `CompanyID` (`Apex Logistics Corp`, `Starlight Global Retail`, etc.).
-  - Tenant scope is passed via the `x-company-id` header and managed globally via `CompanyContext` and a header switcher.
-- **Tenant Management**:
-  - Administrative portal (`/dashboard/companies`) for managing corporate entities, domains, and configurations.
+### 2. 👑 SuperAdmin Control Plane & Group of Companies (Conglomerates)
+- **Multi-Tenant Hierarchy (Groups → Subsidiaries → Depots)**:
+  - **Company Groups (`CompanyGroup`)**: Parent holding companies / conglomerates (e.g., *Apex Enterprise Holdings*, *Starlight Omnichannel Conglomerate*, *Nexus Industrial Alliance*) that group multiple operational companies under a single umbrella.
+  - **Subsidiary Multi-Tenancy (`Company`)**: Child companies inherit parent group alignment while maintaining strict operational data isolation.
+- **Dedicated SuperAdmin Portal (`/dashboard/superadmin`)**:
+  - **Global Telemetry**: Real-time cross-tenant telemetry aggregated across all corporate groups (total conglomerates, operating subsidiaries, cross-tenant users, global SKU catalog, and cumulative inventory valuation).
+  - **Corporate Group Manager**: Visual management of parent conglomerates with assigned subsidiaries, company codes, industry classification, and country nodes.
+  - **1-Click Tenant Provisioning Wizard**: Automated orchestrator that provisions a new Corporate Group, its initial Operating Subsidiary, default primary Warehouse Depot, and creates the tenant's primary Admin account in a single atomic flow.
+  - **Cross-Tenant User Provisioning**: Provision users directly into any tenant or corporate group with designated roles.
+  - **Universal Workspace Impersonation**: Instant 1-click workspace switching allowing the SuperAdmin to inspect and audit any subsidiary tenant workspace seamlessly.
 
-### 3. 🛡️ Role-Based Access Control (RBAC)
+### 3. 🏢 B2B Multi-Tenancy Architecture
+- **Strict Tenant Isolation**:
+  - Data across all supply-chain entities is isolated by `CompanyID` (`Apex Logistics Corp`, `Apex Air Freight`, `Starlight Global Retail`, etc.).
+  - Tenant scope is passed via the `x-company-id` header and managed globally via `CompanyContext` and a persistent header switcher.
+- **Tenant Management**:
+  - Administrative portal (`/dashboard/companies`) for managing corporate entities, domains, parent conglomerate affiliations, and configurations.
+
+### 4. 🛡️ Role-Based Access Control (RBAC)
 - Multi-tier enterprise authorization:
-  - **`ADMIN`**: Full platform oversight, user management, company switching, catalog configuration, and replenishment approvals.
+  - **`SUPERADMIN`**: Full platform control plane. Can create and manage Groups of Companies, provision new tenant ecosystems, provision cross-tenant users, view platform-wide telemetry, and seamlessly switch into any subsidiary workspace.
+  - **`ADMIN`**: Full tenant company oversight, company user management, catalog configuration, and replenishment approvals.
   - **`MANAGER`**: Operational management across warehouse depots, orders, transfers, and inventory.
   - **`EMPLOYEE`**: View-only and operational logging of daily dispatches and stock audits.
 - Administrative User & RBAC Management console (`/dashboard/users`).
 
-### 4. 📊 Executive Command Center & Telemetry
+### 5. 📊 Executive Command Center & Telemetry
 - **Interactive Visualizations (Recharts)**:
   - **Throughput & Fulfillment**: Area chart comparing inbound PO procurements with outbound customer delivery dispatches.
   - **Catalog Category Mix**: Donut chart detailing SKU distribution across verticals.
@@ -49,13 +61,13 @@ Built as a high-performance TypeScript monorepo with **Turborepo**, **Next.js 14
   - Total Stock Units, Reorder Alerts, Settled Volume, and Active Inter-Depot Transfers.
   - Quick-access operational shortcuts and high-visibility ML Forecaster banner.
 
-### 5. 📑 Universal CRUD Suite & Deep Interlinking
+### 6. 📑 Universal CRUD Suite & Deep Interlinking
 - Standardized UI architecture powered by reusable `GenericEntityTable`, slide-over `GenericEntityDrawer`, and `GenericEntityModal`.
 - Comprehensive CRUD ledgers with bidirectional navigation:
   - **Products**, **Locations**, **Warehouses**, **Inventories**, **Customers**, **Deliveries**, **Providers**, **Orders**, **Transfers**, **Payments**, **Transactions**, **Companies**, and **Users**.
 - Seamless cross-entity linking (e.g., jump from low inventory directly to SKU specifications, depot details, active transfers, or the ML forecaster).
 
-### 6. 🎨 Ergonomic & Modern UI/UX
+### 7. 🎨 Ergonomic & Modern UI/UX
 - **Adaptive Sidebar**: Smooth desktop collapsing into clean icon-only mode with floating tooltips and mobile hamburger drawer.
 - **Custom Brand Identity**: Native SVG vectors (`MeshLogoSvg`).
 - **Redesigned Enterprise Auth**: Dual-panel login screen featuring one-click demo credentials and multi-tenant branding.
@@ -71,6 +83,7 @@ Mesh/
 │   │   ├── app/
 │   │   │   ├── (routes)/
 │   │   │   │   ├── dashboard/       # Enterprise command center
+│   │   │   │   │   ├── superadmin/  # SuperAdmin Control Plane & Conglomerates Hub
 │   │   │   │   │   ├── forecast/    # ML Stockout Forecaster & Auto-PO dashboard
 │   │   │   │   │   ├── companies/   # Multi-tenant corporate management
 │   │   │   │   │   ├── users/       # User accounts & RBAC management
@@ -84,8 +97,8 @@ Mesh/
 │   │   └── components/ui/           # Radix UI + Tailwind design tokens
 │   │
 │   └── api/                         # Express + TypeScript backend
-│       ├── controllers/             # REST controllers (Forecast, Company, Product, etc.)
-│       ├── routes/                  # Express API routers
+│       ├── controllers/             # REST controllers (SuperAdmin, CompanyGroup, Forecast, etc.)
+│       ├── routes/                  # Express API routers (/api/superadmin, /api/company-group, etc.)
 │       ├── services/                # ML Python bridge & business services
 │       ├── ml/                      # Native Python ML Engine (forecast_engine.py)
 │       ├── middleware/              # JWT auth, RBAC & multi-tenant tenancy resolution
@@ -187,12 +200,30 @@ Visit [http://localhost:3000](http://localhost:3000) to open the application.
 
 Use any of the seeded credentials below on the [Login page](http://localhost:3000/login):
 
-| Email | Password | Role | Assigned Company |
+| Email | Password | Role | Conglomerate / Scope | Assigned Company |
+|---|---|---|---|---|
+| `superadmin@mesh.com` | `admin123` | `SUPERADMIN` | **Platform SuperAdmin (All Groups)** | Apex Enterprise Holdings |
+| `admin@mesh.com` | `admin123` | `ADMIN` | Apex Enterprise Holdings | Apex Logistics Corp |
+| `starlight.admin@mesh.com` | `admin123` | `ADMIN` | Starlight Omnichannel Conglomerate | Starlight Global Retail |
+| `manager@mesh.com` | `manager123` | `MANAGER` | Apex Enterprise Holdings | Apex Logistics Corp |
+| `employee@mesh.com` | `employee123` | `EMPLOYEE` | Apex Enterprise Holdings | Apex Logistics Corp |
+
+---
+
+## 👑 SuperAdmin & Group REST APIs
+
+| Endpoint | Method | RBAC | Description |
 |---|---|---|---|
-| `admin@mesh.com` | `admin123` | `ADMIN` | Apex Logistics Corp |
-| `starlight.admin@mesh.com` | `admin123` | `ADMIN` | Starlight Global Retail |
-| `manager@mesh.com` | `manager123` | `MANAGER` | Apex Logistics Corp |
-| `employee@mesh.com` | `employee123` | `EMPLOYEE` | Apex Logistics Corp |
+| `/api/superadmin/stats` | `GET` | `SUPERADMIN` | Platform-wide KPIs: groups, companies, users, catalog, inventory valuation |
+| `/api/superadmin/provision` | `POST` | `SUPERADMIN` | 1-Click atomic tenant wizard: provisions group, company, warehouse depot, admin user |
+| `/api/superadmin/tenants-hierarchy`| `GET` | `SUPERADMIN` | Returns full nested hierarchy tree: Groups → Subsidiaries → Users |
+| `/api/company-group` | `GET` | `SUPERADMIN` / `ADMIN` | Lists all corporate groups with subsidiaries and user counts |
+| `/api/company-group/:id` | `GET` | `SUPERADMIN` / `ADMIN` | Retrieves specific corporate group details |
+| `/api/company-group` | `POST` | `SUPERADMIN` | Creates a new parent Corporate Group (`groupName`, `groupCode`, etc.) |
+| `/api/company-group/:id` | `PUT` | `SUPERADMIN` | Updates an existing Corporate Group |
+| `/api/company-group/:id` | `DELETE` | `SUPERADMIN` | Deletes a Corporate Group (unlinks associated companies) |
+| `/api/company-group/:id/add-company` | `POST` | `SUPERADMIN` | Attaches an existing subsidiary company to a parent group |
+| `/api/company-group/:id/remove-company/:companyId` | `POST` | `SUPERADMIN` | Detaches a subsidiary company from a parent group |
 
 ---
 

@@ -1,11 +1,30 @@
 // Role enum matching prisma schema
-export type Role = "ADMIN" | "MANAGER" | "EMPLOYEE";
+export type Role = "SUPERADMIN" | "ADMIN" | "MANAGER" | "EMPLOYEE";
 
 // Order & Payment status
 export type Status = "INITIATED" | "PROCESSING" | "COMPLETED" | "CANCELLED";
 
 // Payment method
 export type Mode = "ONLINE" | "OFFLINE" | "CHEQUE";
+
+// Group of Companies entity (Multi-Tenancy Umbrella / Conglomerate)
+export interface CompanyGroup {
+  companyGroupId: string;
+  groupName: string;
+  groupCode: string;
+  description?: string | null;
+  logoUrl?: string | null;
+  industry?: string | null;
+  country?: string | null;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+  companies?: Company[];
+  users?: User[];
+  _count?: {
+    companies?: number;
+    users?: number;
+  };
+}
 
 // Company entity (Multi-Tenancy)
 export interface Company {
@@ -15,8 +34,17 @@ export interface Company {
   companyDomain?: string | null;
   logoUrl?: string | null;
   description?: string | null;
+  companyGroupId?: string | null;
+  companyGroup?: CompanyGroup | null;
   createdAt?: string | Date;
   updatedAt?: string | Date;
+  _count?: {
+    users?: number;
+    products?: number;
+    warehouses?: number;
+    orders?: number;
+    deliveries?: number;
+  };
 }
 
 // User entity
@@ -27,6 +55,8 @@ export interface User {
   userRole?: Role | null;
   companyId?: string | null;
   company?: Company | null;
+  companyGroupId?: string | null;
+  companyGroup?: CompanyGroup | null;
 }
 
 // Product entity
