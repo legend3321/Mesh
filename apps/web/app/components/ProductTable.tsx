@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   ColumnDef,
   ColumnFiltersState,
+  PaginationState,
   SortingState,
   VisibilityState,
   flexRender,
@@ -75,7 +76,10 @@ export default function ProductTable({
   const [priorityFilter, setPriorityFilter] = React.useState("ALL");
   const [bookmarkedOnly, setBookmarkedOnly] = React.useState(false);
   const [selectedRowIds, setSelectedRowIds] = React.useState<Set<string>>(new Set());
-  const [pageSize, setPageSize] = React.useState(10);
+  const [pagination, setPagination] = React.useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
 
   const columns: ColumnDef<Product, any>[] = [
     {
@@ -308,6 +312,8 @@ export default function ProductTable({
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
+    onPaginationChange: setPagination,
+    autoResetPageIndex: false,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -317,15 +323,14 @@ export default function ProductTable({
       sorting,
       columnFilters,
       columnVisibility,
-      pagination: {
-        pageIndex: 0,
-        pageSize,
-      },
+      pagination,
     },
   });
 
   const totalCount = filteredProducts.length;
-  const pageIndex = table.getState().pagination.pageIndex;
+  const pageIndex = pagination.pageIndex;
+  const pageSize = pagination.pageSize;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const startRow = totalCount === 0 ? 0 : pageIndex * pageSize + 1;
   const endRow = Math.min((pageIndex + 1) * pageSize, totalCount);
 
@@ -340,7 +345,10 @@ export default function ProductTable({
             <Input
               placeholder="Search catalog SKUs..."
               value={globalFilter}
-              onChange={(e) => setGlobalFilter(e.target.value)}
+              onChange={(e) => {
+                setGlobalFilter(e.target.value);
+                setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+              }}
               className="pl-8 h-8 text-xs bg-white border-slate-200 text-slate-800 placeholder:text-slate-400 rounded-lg shadow-2xs focus-visible:ring-blue-600"
             />
           </div>
@@ -358,9 +366,9 @@ export default function ProductTable({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-40 bg-white text-xs">
-              <DropdownMenuItem onClick={() => setGlobalFilter("")}>All Leads</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setGlobalFilter("Apex")}>Apex Logistics</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setGlobalFilter("Starlight")}>Starlight Retail</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setGlobalFilter(""); setPagination((prev) => ({ ...prev, pageIndex: 0 })); }}>All Leads</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setGlobalFilter("Apex"); setPagination((prev) => ({ ...prev, pageIndex: 0 })); }}>Apex Logistics</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setGlobalFilter("Starlight"); setPagination((prev) => ({ ...prev, pageIndex: 0 })); }}>Starlight Retail</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -380,9 +388,9 @@ export default function ProductTable({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-36 bg-white text-xs">
-              <DropdownMenuItem onClick={() => setPriorityFilter("ALL")}>All Storage</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setPriorityFilter("COLD")}>Cold Chain</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setPriorityFilter("STD")}>Ambient</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setPriorityFilter("ALL"); setPagination((prev) => ({ ...prev, pageIndex: 0 })); }}>All Storage</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setPriorityFilter("COLD"); setPagination((prev) => ({ ...prev, pageIndex: 0 })); }}>Cold Chain</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setPriorityFilter("STD"); setPagination((prev) => ({ ...prev, pageIndex: 0 })); }}>Ambient</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -490,7 +498,7 @@ export default function ProductTable({
         </Table>
 
         {/* Enterprise Pagination Bar */}
-        <div className="flex items-center justify-between px-4 py-2.5 bg-white border-t border-slate-100">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-2.5 bg-white border-t border-slate-100">
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -506,7 +514,9 @@ export default function ProductTable({
                 {[5, 10, 25, 50, 100].map((size) => (
                   <DropdownMenuItem
                     key={size}
-                    onClick={() => setPageSize(size)}
+                    onClick={() =>
+                      setPagination({ pageIndex: 0, pageSize: size })
+                    }
                     className="cursor-pointer"
                   >
                     {size} results
@@ -523,17 +533,64 @@ export default function ProductTable({
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
+                onClick={() =>
+                  setPagination((prev) => ({
+                    ...prev,
+                    pageIndex: Math.max(0, prev.pageIndex - 1),
+                  }))
+                }
+                disabled={pageIndex === 0}
                 className="w-7 h-7 rounded-md border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs transition-colors"
                 title="Previous page"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
               </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i).map((pageIdx) => {
+                if (
+                  totalPages > 7 &&
+                  pageIdx !== 0 &&
+                  pageIdx !== totalPages - 1 &&
+                  Math.abs(pageIdx - pageIndex) > 1
+                ) {
+                  if (pageIdx === 1 || pageIdx === totalPages - 2) {
+                    return (
+                      <span key={`ellipsis-${pageIdx}`} className="px-1 text-slate-400 text-xs">
+                        ...
+                      </span>
+                    );
+                  }
+                  return null;
+                }
+
+                const isActive = pageIdx === pageIndex;
+                return (
+                  <button
+                    key={pageIdx}
+                    type="button"
+                    onClick={() =>
+                      setPagination((prev) => ({ ...prev, pageIndex: pageIdx }))
+                    }
+                    className={`min-w-7 h-7 px-2 rounded-md text-xs font-semibold transition-colors flex items-center justify-center ${
+                      isActive
+                        ? "bg-slate-900 text-white shadow-2xs"
+                        : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    {pageIdx + 1}
+                  </button>
+                );
+              })}
+
               <button
                 type="button"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
+                onClick={() =>
+                  setPagination((prev) => ({
+                    ...prev,
+                    pageIndex: Math.min(totalPages - 1, prev.pageIndex + 1),
+                  }))
+                }
+                disabled={pageIndex >= totalPages - 1}
                 className="w-7 h-7 rounded-md border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs transition-colors"
                 title="Next page"
               >
