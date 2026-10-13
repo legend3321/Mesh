@@ -111,7 +111,7 @@ export default function SuperAdminDashboardPage() {
         api.get("/superadmin/stats"),
         api.get("/company-group/getAll"),
         api.get("/company/getAll"),
-        api.get("/auth/getAll?all=true"),
+        api.get("/auth/users/getAll?all=true"),
       ]);
 
       setStats(statsRes.data?.metrics || null);
@@ -237,7 +237,7 @@ export default function SuperAdminDashboardPage() {
   const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post("/auth/add", userFormData);
+      await api.post("/auth/users/add", userFormData);
       toast({
         title: "User Provisioned",
         description: `Created user ${userFormData.userEmail} with role ${userFormData.userRole}.`,
