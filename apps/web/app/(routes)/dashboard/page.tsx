@@ -292,28 +292,28 @@ export default function DashboardOverviewPage() {
 
       {/* SuperAdmin Global Alert Banner */}
       {isSuperAdmin && (
-        <div className="bg-gradient-to-r from-amber-950 via-slate-900 to-indigo-950 border border-amber-500/40 rounded-xl p-3.5 px-4 text-white shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="bg-amber-50/80 border border-amber-200/90 rounded-xl p-3 px-4 text-amber-950 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-400 shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700 shrink-0">
               <Crown className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-white">
-                SuperAdmin Context: Currently viewing tenant <span className="text-amber-300 font-bold">{currentCompany?.companyName || "Aggregated Tenants"}</span>
+              <p className="text-xs font-semibold text-amber-950">
+                SuperAdmin Context: Currently viewing tenant <span className="text-amber-800 font-bold">{currentCompany?.companyName || "Aggregated Tenants"}</span>
                 {currentCompany?.companyGroup && (
-                  <span className="text-slate-400 font-normal"> under <span className="text-slate-300 font-semibold">{currentCompany.companyGroup.groupName}</span></span>
+                  <span className="text-slate-600 font-normal"> under <span className="text-slate-800 font-semibold">{currentCompany.companyGroup.groupName}</span></span>
                 )}
               </p>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-amber-700/90">
                 You have global administrative rights across all corporate groups, subsidiaries, and users.
               </p>
             </div>
           </div>
           <Link href="/dashboard/superadmin">
-            <Button size="sm" className="bg-amber-600 hover:bg-amber-500 text-white h-7 text-xs font-semibold gap-1 whitespace-nowrap shadow-xs">
-              <Crown className="w-3 h-3 text-amber-200" />
+            <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white h-7 text-xs font-semibold gap-1.5 whitespace-nowrap shadow-2xs">
+              <Crown className="w-3.5 h-3.5 text-amber-100" />
               <span>SuperAdmin Hub</span>
-              <ArrowUpRight className="w-3 h-3" />
+              <ArrowUpRight className="w-3.5 h-3.5" />
             </Button>
           </Link>
         </div>

@@ -304,43 +304,42 @@ export default function SuperAdminDashboardPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Top SuperAdmin Hero Banner */}
-      <div className="bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 border border-amber-500/30 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-6 text-slate-900 shadow-2xs relative overflow-hidden">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-amber-500/20 to-purple-500/20 text-amber-300 border border-amber-400/40 flex items-center gap-1.5 shadow-sm">
-                <Crown className="w-3.5 h-3.5 text-amber-400" />
+              <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-300 flex items-center gap-1.5 shadow-2xs">
+                <Crown className="w-3.5 h-3.5 text-amber-600" />
                 Platform SuperAdmin Control Plane
               </span>
-              <span className="text-xs text-slate-400 font-medium">
-                Signed in as: <strong className="text-white">{session?.user?.name || "SuperAdmin (Ujjwal)"}</strong>
+              <span className="text-xs text-slate-500 font-medium">
+                Signed in as: <strong className="text-slate-800">{session?.user?.name || "SuperAdmin (Ujjwal)"}</strong>
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
               Multi-Tenant Group & User Orchestrator
             </h1>
-            <p className="text-sm text-slate-300 max-w-2xl">
+            <p className="text-sm text-slate-500 max-w-2xl">
               Create and manage corporate conglomerates, establish isolated subsidiary companies, and provision dedicated users with granular RBAC permissions.
             </p>
           </div>
 
           {/* Action CTAs */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             <Button
               size="sm"
               onClick={handleOpenCreateGroup}
-              className="bg-amber-600 hover:bg-amber-500 text-white gap-1.5 text-xs font-semibold shadow-md"
+              className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5 text-xs font-semibold shadow-2xs"
             >
-              <Network className="w-4 h-4" />
+              <Network className="w-3.5 h-3.5" />
               New Group of Companies
             </Button>
             <Button
               size="sm"
               onClick={() => setIsProvisionModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-500 text-white gap-1.5 text-xs font-semibold shadow-md"
+              className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 text-xs font-semibold shadow-2xs"
             >
-              <Sparkles className="w-4 h-4 text-amber-300" />
+              <Sparkles className="w-3.5 h-3.5" />
               1-Click Tenant Provisioner
             </Button>
             <Button
@@ -348,7 +347,7 @@ export default function SuperAdminDashboardPage() {
               variant="outline"
               onClick={fetchSuperAdminData}
               disabled={loading}
-              className="bg-slate-900/80 hover:bg-slate-800 text-slate-300 border-slate-700 text-xs gap-1.5"
+              className="bg-white hover:bg-slate-50 text-slate-700 border-slate-200 text-xs gap-1.5"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
               Sync
