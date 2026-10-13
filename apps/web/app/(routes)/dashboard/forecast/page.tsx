@@ -269,85 +269,93 @@ export default function StockoutForecastPage() {
       {/* Top Telemetry KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Critical Alerts */}
-        <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Critical Stockouts
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center text-red-600">
-              <AlertTriangle className="w-4 h-4" />
+        <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-2xs relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                Critical Stockouts
+              </span>
+              <div className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center text-red-600 shrink-0">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-red-600">
+                {summary?.criticalSkusCount ?? 0}
+              </span>
+              <span className="text-xs text-slate-500 font-medium">SKUs &lt; lead time</span>
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-red-600">
-              {summary?.criticalSkusCount ?? 0}
-            </span>
-            <span className="text-xs text-slate-500">SKUs &lt; lead time</span>
-          </div>
-          <div className="mt-2 flex items-center gap-1.5 text-[11px] text-red-600">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span>Immediate procurement required</span>
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-red-600 font-medium pt-2 border-t border-slate-100">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+            <span className="truncate">Immediate procurement required</span>
           </div>
         </div>
 
         {/* Card 2: Projected Value at Risk */}
-        <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              At-Risk Capital
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
-              <DollarSign className="w-4 h-4" />
+        <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-2xs relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                At-Risk Capital
+              </span>
+              <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shrink-0">
+                <DollarSign className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-slate-900">
+                ${(summary?.projectedStockoutValue ?? 0).toLocaleString()}
+              </span>
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900">
-              ${(summary?.projectedStockoutValue ?? 0).toLocaleString()}
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-500 mt-2">
+          <p className="text-xs text-slate-500 mt-3 pt-2 border-t border-slate-100 truncate">
             Inventory valuation on critical items
           </p>
         </div>
 
         {/* Card 3: Average Runway Days */}
-        <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Average Runway
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
-              <Clock className="w-4 h-4" />
+        <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-2xs relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                Average Runway
+              </span>
+              <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0">
+                <Clock className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-slate-900">
+                {summary?.averageDaysOfCoverage ?? 0}
+              </span>
+              <span className="text-xs text-slate-500 font-medium">Days</span>
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900">
-              {summary?.averageDaysOfCoverage ?? 0}
-            </span>
-            <span className="text-xs text-slate-500">Days</span>
-          </div>
-          <p className="text-[11px] text-slate-500 mt-2">
+          <p className="text-xs text-slate-500 mt-3 pt-2 border-t border-slate-100 truncate">
             Across {summary?.totalSkusEvaluated ?? 0} total tenant SKUs
           </p>
         </div>
 
         {/* Card 4: Model Status */}
-        <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              ML Model Confidence
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
-              <CheckCircle2 className="w-4 h-4" />
+        <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-2xs relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                ML Model Confidence
+              </span>
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0">
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-emerald-600">
+                {Math.round((summary?.modelMetadata?.confidenceScore ?? 0.94) * 100)}%
+              </span>
+              <span className="text-xs text-slate-500 font-medium">Ensemble Fit</span>
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-emerald-600">
-              {Math.round((summary?.modelMetadata?.confidenceScore ?? 0.94) * 100)}%
-            </span>
-            <span className="text-xs text-slate-500">Ensemble Fit</span>
-          </div>
-          <p className="text-[11px] text-slate-500 mt-2 truncate font-mono">
+          <p className="text-xs text-slate-500 mt-3 pt-2 border-t border-slate-100 font-mono truncate">
             Lead Time: {summary?.modelMetadata?.leadTimeAssumedDays ?? 5}d
           </p>
         </div>
@@ -381,7 +389,7 @@ export default function StockoutForecastPage() {
       {/* Charts Section: XGBoost Feature Importance & Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* XGBoost Feature Attribution Weights */}
-        <div className="lg:col-span-8 bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
+        <div className="lg:col-span-8 bg-white p-5 rounded-xl border border-slate-200/90 shadow-2xs">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -397,12 +405,12 @@ export default function StockoutForecastPage() {
             </span>
           </div>
 
-          <div className="h-56">
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={featureImportanceData}
                 layout="vertical"
-                margin={{ top: 5, right: 30, left: 90, bottom: 5 }}
+                margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F1F5F9" />
                 <XAxis type="number" unit="%" tick={{ fontSize: 11, fill: "#64748B" }} />
@@ -410,7 +418,7 @@ export default function StockoutForecastPage() {
                   type="category"
                   dataKey="feature"
                   tick={{ fontSize: 11, fill: "#334155" }}
-                  width={110}
+                  width={130}
                 />
                 <Tooltip
                   formatter={(val: any) => [`${val}%`, "Importance Weight"]}
@@ -436,7 +444,7 @@ export default function StockoutForecastPage() {
         </div>
 
         {/* Donut Chart: Inventory Health Breakdown */}
-        <div className="lg:col-span-4 bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+        <div className="lg:col-span-4 bg-white p-5 rounded-xl border border-slate-200/90 shadow-2xs flex flex-col justify-between">
           <div>
             <h2 className="text-sm font-bold text-slate-900 mb-1">
               Stockout Risk Breakdown
@@ -501,7 +509,7 @@ export default function StockoutForecastPage() {
       </div>
 
       {/* SKU Risk Matrix & Action Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
         {/* Table Toolbar */}
         <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-1.5">
