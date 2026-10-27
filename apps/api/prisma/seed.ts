@@ -108,15 +108,13 @@ async function main() {
   console.log("Seeding enterprise user authentication matrix...");
   const hashedPassword = await bcrypt.hash("admin123", 10);
 
-  // 1. SuperAdmin (Universal Platform Operator)
+  // 1. SuperAdmin (Universal Platform Backend Operator - Unlinked from tenant organizations)
   await prisma.user.create({
     data: {
-      userName: "Ujjwal Chaudhary (SuperAdmin)",
+      userName: "Ujjwal Chaudhary (Platform SuperAdmin)",
       userEmail: "superadmin@mesh.com",
       userPassword: hashedPassword,
       userRole: Role.SUPERADMIN,
-      companyGroupId: apexGroup.companyGroupId,
-      companyId: apexFreight.companyId,
     },
   });
 

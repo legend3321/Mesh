@@ -37,9 +37,13 @@ export default function UserManagementPage() {
     try {
       setLoading(true);
       const res = await api.get("/auth/users/getAll");
-      setUsers(res.data);
+      // Filter out SUPERADMIN users for non-superadmin views
+      const visibleUsers = isSuperAdmin
+        ? res.data
+        : (res.data || []).filter((u: User) => u.userRole !== "SUPERADMIN");
+      setUsers(visibleUsers);
       if (selectedItem) {
-        const found = res.data.find((u: User) => u.userId === selectedItem.userId);
+        const found = visibleUsers.find((u: User) => u.userId === selectedItem.userId);
         setSelectedItem(found || null);
       }
     } catch (err: any) {

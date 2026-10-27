@@ -46,11 +46,24 @@ const createUser = async (req: Request, res: Response) => {
 
 const getAllUsers = async (req: Request, res: Response) => {
   try {
+    const reqWithUser = req as RequestWithUser;
+    const currentUser = (reqWithUser.user as any)?.user || reqWithUser.user;
+    const isSuperAdmin = currentUser?.userRole === "SUPERADMIN";
+
     const tenantId = getTenantId(req);
-    const showAll = req.query.all === "true" || tenantId === "all";
+    const showAll = (req.query.all === "true" || tenantId === "all") && isSuperAdmin;
+
+    // SuperAdmin is a platform-internal administrative role.
+    // Tenant users (Customers, Company Admins, Managers, Employees) must NEVER see SUPERADMIN accounts in their user lists.
+    const whereClause: any = {
+      ...(showAll ? {} : tenantId ? { companyId: tenantId } : {}),
+      ...(!isSuperAdmin && {
+        userRole: { not: "SUPERADMIN" },
+      }),
+    };
 
     const users = await prisma.user.findMany({
-      where: showAll ? {} : tenantId ? { companyId: tenantId } : {},
+      where: whereClause,
       select: {
         userId: true,
         userEmail: true,
