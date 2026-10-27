@@ -58,7 +58,7 @@ export default function Sidenav() {
       title: "Operations",
       items: [
         { name: "Overview", path: "", icon: LayoutDashboard },
-        { name: "AI Forecaster", path: "/forecast", icon: BrainCircuit, badge: "AI" },
+        { name: "Forecaster", path: "/forecast", icon: BrainCircuit },
         { name: "Orders", path: "/order", icon: ListCheck },
         { name: "Transfers", path: "/transfer", icon: ArrowLeftRight },
       ],
@@ -114,20 +114,36 @@ export default function Sidenav() {
     <div className="h-full flex flex-col justify-between p-3 overflow-x-hidden overflow-y-auto bg-[#222026] text-[#CAC5CD] select-none">
       {/* Top Header */}
       <div>
-        <div
-          className={`flex items-center mb-4 pt-1 ${
-            collapsed ? "justify-center" : "justify-between px-1"
-          }`}
-        >
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-3 group min-w-0"
-            title="Mesh Supply Chain"
-          >
-            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-105">
-              <MeshLogoSvg size={22} className="text-[#FD3706]" />
-            </div>
-            {!collapsed && (
+        {collapsed ? (
+          <div className="flex flex-col items-center gap-2 mb-4 pt-1">
+            <Link
+              href="/dashboard"
+              className="flex items-center justify-center group"
+              title="Mesh Supply Chain"
+            >
+              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-105">
+                <MeshLogoSvg size={22} className="text-[#FD3706]" />
+              </div>
+            </Link>
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="w-8 h-8 hidden sm:flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#19171C] rounded-lg transition-colors cursor-pointer"
+              title="Expand sidebar"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between mb-4 pt-1 px-1">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-3 group min-w-0"
+              title="Mesh Supply Chain"
+            >
+              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-105">
+                <MeshLogoSvg size={22} className="text-[#FD3706]" />
+              </div>
               <div className="flex flex-col min-w-0">
                 <span className="font-archivo text-base font-bold tracking-tight text-white uppercase truncate">
                   Mesh
@@ -136,31 +152,17 @@ export default function Sidenav() {
                   SCM Telemetry
                 </span>
               </div>
-            )}
-          </Link>
-
-          {!collapsed ? (
+            </Link>
             <button
               type="button"
               onClick={toggleSidebar}
-              className="hidden sm:flex items-center justify-center p-1.5 text-slate-400 hover:text-white hover:bg-[#19171C] rounded-lg transition-colors"
+              className="hidden sm:flex items-center justify-center p-1.5 text-slate-400 hover:text-white hover:bg-[#19171C] rounded-lg transition-colors cursor-pointer"
               title="Collapse sidebar"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-          ) : (
-            <div className="hidden sm:flex justify-center mt-2 mb-1">
-              <button
-                type="button"
-                onClick={toggleSidebar}
-                className="p-1.5 text-slate-400 hover:text-white hover:bg-[#19171C] rounded-lg transition-colors"
-                title="Expand sidebar"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Navigation Sections */}
         <nav className="space-y-4 mt-2">

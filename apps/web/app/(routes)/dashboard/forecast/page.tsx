@@ -224,45 +224,45 @@ export default function StockoutForecastPage() {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-              <BrainCircuit className="w-6 h-6 text-blue-600" />
-              AI Stockout Risk Forecaster &amp; Auto-PO
+            <h1 className="font-archivo text-2xl font-bold uppercase tracking-tight text-[#222026] flex items-center gap-2 whitespace-nowrap">
+              <BrainCircuit className="w-6 h-6 text-[#FD3706]" />
+              Demand &amp; Stockout Forecaster
             </h1>
-            <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+            <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FD3706]/10 text-[#FD3706] border border-[#FD3706]/30 whitespace-nowrap">
               XGBoost 3.4.1 &bull; Scikit-Learn 1.9.1
             </span>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-[#222026] border border-slate-200 whitespace-nowrap">
               {isAllCompanies
                 ? "Global Tenant Scope"
                 : currentCompany?.companyName || "Active Tenant"}
             </span>
           </div>
-          <p className="text-sm text-slate-500">
+          <p className="text-xs sm:text-sm text-slate-500">
             Machine learning pipeline predicting SKU stockout probabilities, runway exhaustion, and automated purchase order dispatch.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 shrink-0">
           <Button
             variant="outline"
             size="sm"
             onClick={fetchForecast}
             disabled={loading}
-            className="h-9 gap-1.5 text-xs text-slate-700 bg-white"
+            className="h-9 gap-1.5 text-xs text-[#222026] bg-white border-[#E5E7EB] hover:bg-slate-100 whitespace-nowrap cursor-pointer shadow-xs"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            Re-evaluate Telemetry
+            <RefreshCw className={`w-3.5 h-3.5 mr-1 ${loading ? "animate-spin" : ""}`} />
+            <span>Re-evaluate Telemetry</span>
           </Button>
 
-          <Button
-            size="sm"
+          <button
+            type="button"
             onClick={handleBatchAutoPO}
             disabled={loading || replenishingAll || (summary?.criticalSkusCount ?? 0) === 0}
-            className="h-9 gap-1.5 text-xs bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold shadow-md shadow-blue-600/20"
+            className="h-9 px-3.5 rounded-lg bg-[#FD3706] hover:bg-[#E02E00] text-white font-archivo text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 shadow-xs disabled:opacity-50 whitespace-nowrap cursor-pointer transition-colors"
           >
             <Zap className={`w-3.5 h-3.5 ${replenishingAll ? "animate-spin" : ""}`} />
-            {replenishingAll ? "Generating PO Batch..." : "Execute AI Auto-PO (All Critical)"}
-          </Button>
+            <span>{replenishingAll ? "Generating PO Batch..." : "Execute Auto-PO (All Critical)"}</span>
+          </button>
         </div>
       </div>
 

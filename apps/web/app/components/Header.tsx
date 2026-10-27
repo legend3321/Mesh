@@ -24,23 +24,20 @@ export default function Header() {
   const userEmail = session?.user?.email || "dispatch@meshlogistics.io";
 
   return (
-    <header className="sticky top-0 z-30 w-full h-16 bg-white/90 backdrop-blur-md border-b border-[#E5E7EB] px-4 sm:px-6 flex items-center justify-between gap-4 transition-all">
+    <header className="sticky top-0 z-30 w-full h-16 bg-white/95 backdrop-blur-md border-b border-[#E5E7EB] px-4 sm:px-6 flex items-center justify-between gap-4 transition-all">
       {/* Brand & Context Title */}
       <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-[#222026] flex items-center justify-center p-1.5 shadow-sm shrink-0">
-            <MeshLogoSvg className="w-5 h-5 text-white" />
-          </div>
-          <div className="hidden sm:flex flex-col min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-archivo text-base font-bold uppercase tracking-tight text-[#222026] truncate">
+              <span className="font-archivo text-sm sm:text-base font-bold uppercase tracking-tight text-[#222026] whitespace-nowrap">
                 Mesh Supply Chain
               </span>
-              <span className="hidden md:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-[#FD3706]/10 text-[#FD3706]">
+              <span className="hidden xl:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#FD3706]/10 text-[#FD3706] whitespace-nowrap">
                 LIVE TELEMETRY
               </span>
             </div>
-            <span className="font-mono text-[11px] uppercase tracking-wider text-slate-400">
+            <span className="font-mono text-[10px] sm:text-[11px] uppercase tracking-wider text-slate-400 whitespace-nowrap">
               Operations & Inventory Grid
             </span>
           </div>
@@ -48,22 +45,22 @@ export default function Header() {
 
         {/* Multi-Tenant Company Selector Capsule */}
         {companies.length > 0 && (
-          <div className="ml-2 pl-3 border-l border-slate-200">
+          <div className="pl-3 border-l border-slate-200 shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#F3F4F7] hover:bg-slate-200/80 text-xs font-medium text-[#222026] transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#F3F4F7] hover:bg-slate-200 text-xs font-medium text-[#222026] transition-colors whitespace-nowrap cursor-pointer"
                 >
-                  <Building className="w-3.5 h-3.5 text-[#FD3706]" />
-                  <span className="max-w-[130px] sm:max-w-[180px] truncate">
+                  <Building className="w-3.5 h-3.5 text-[#FD3706] shrink-0" />
+                  <span className="max-w-[120px] sm:max-w-[180px] truncate font-medium">
                     {isAllCompanies
                       ? "All Companies"
                       : currentCompany
                       ? currentCompany.companyName
                       : "Select Facility"}
                   </span>
-                  <ChevronDown className="w-3 h-3 text-slate-400" />
+                  <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56 bg-white shadow-lg border border-slate-200">
@@ -85,7 +82,7 @@ export default function Header() {
                       activeCompanyId === c.companyId ? "font-bold text-[#FD3706] bg-slate-50" : "text-slate-700"
                     }`}
                   >
-                    <Building className="w-3.5 h-3.5 mr-2 text-slate-400" />
+                    <Building className="w-3.5 h-3.5 mr-2 text-slate-400 shrink-0" />
                     <span className="truncate">{c.companyName}</span>
                     <span className="ml-auto text-[10px] font-mono text-slate-400">{c.companyCode}</span>
                   </DropdownMenuItem>
@@ -97,7 +94,7 @@ export default function Header() {
       </div>
 
       {/* Right Controls: Search Capsule, Currency Pill, User Profile (NO Notification Icon) */}
-      <div className="flex items-center gap-2.5 sm:gap-3">
+      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
         {/* Quick Search */}
         <div className="hidden lg:flex items-center bg-[#F3F4F7] px-3 py-1.5 rounded-lg border border-transparent focus-within:border-slate-300 focus-within:bg-white transition-all">
           <Search className="w-4 h-4 text-slate-400 shrink-0" />
@@ -106,12 +103,12 @@ export default function Header() {
             placeholder="Search SKUs, Containers, POs..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-transparent border-0 outline-none text-xs text-[#222026] placeholder:text-slate-400 w-48 xl:w-60 ml-2"
+            className="bg-transparent border-0 outline-none text-xs text-[#222026] placeholder:text-slate-400 w-44 xl:w-56 ml-2"
           />
         </div>
 
         {/* Currency Capsule */}
-        <div className="hidden sm:inline-flex items-center px-2.5 py-1.5 rounded-lg bg-[#F3F4F7] text-[#222026] font-mono text-xs font-medium border border-transparent">
+        <div className="hidden sm:inline-flex items-center px-2.5 py-1.5 rounded-lg bg-[#F3F4F7] text-[#222026] font-mono text-xs font-semibold border border-transparent whitespace-nowrap shrink-0">
           <span>USD $</span>
         </div>
 
@@ -120,20 +117,20 @@ export default function Header() {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="inline-flex items-center gap-2.5 p-1 sm:px-2.5 sm:py-1 rounded-lg hover:bg-[#F3F4F7] transition-colors"
+              className="inline-flex items-center gap-2.5 p-1 sm:px-2.5 sm:py-1 rounded-lg hover:bg-[#F3F4F7] transition-colors whitespace-nowrap cursor-pointer shrink-0"
             >
-              <div className="w-8 h-8 rounded-full bg-[#222026] text-white flex items-center justify-center font-bold text-xs font-archivo">
+              <div className="w-8 h-8 rounded-full bg-[#222026] text-white flex items-center justify-center font-bold text-xs font-archivo shrink-0">
                 {userName.charAt(0).toUpperCase()}
               </div>
               <div className="hidden md:flex flex-col text-left">
-                <span className="text-xs font-bold text-[#222026] leading-tight truncate max-w-[120px]">
+                <span className="text-xs font-bold text-[#222026] leading-tight truncate max-w-[130px]">
                   {userName}
                 </span>
-                <span className="text-[10px] font-mono font-medium text-slate-500 uppercase leading-none">
+                <span className="text-[10px] font-mono font-semibold text-slate-400 uppercase leading-none">
                   {currentUserRole}
                 </span>
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block shrink-0" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52 bg-white shadow-lg border border-slate-200">

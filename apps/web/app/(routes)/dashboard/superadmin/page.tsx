@@ -304,53 +304,53 @@ export default function SuperAdminDashboardPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Top SuperAdmin Hero Banner */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-6 text-slate-900 shadow-2xs relative overflow-hidden">
+      <div className="bg-white border border-[#E5E7EB] rounded-2xl p-6 text-[#222026] shadow-sm relative overflow-hidden">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-300 flex items-center gap-1.5 shadow-2xs">
-                <Crown className="w-3.5 h-3.5 text-amber-600" />
+              <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-[#FD3706]/10 text-[#FD3706] border border-[#FD3706]/30 flex items-center gap-1.5 shadow-2xs whitespace-nowrap">
+                <Crown className="w-3.5 h-3.5 text-[#FD3706]" />
                 Platform SuperAdmin Control Plane
               </span>
-              <span className="text-xs text-slate-500 font-medium">
-                Signed in as: <strong className="text-slate-800">{session?.user?.name || "SuperAdmin (Ujjwal)"}</strong>
+              <span className="text-xs text-slate-500 font-mono whitespace-nowrap">
+                Signed in as: <strong className="text-[#222026]">{session?.user?.name || "SuperAdmin (Ujjwal)"}</strong>
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+            <h1 className="font-archivo text-2xl sm:text-3xl font-bold uppercase tracking-tight text-[#222026]">
               Multi-Tenant Group & User Orchestrator
             </h1>
-            <p className="text-sm text-slate-500 max-w-2xl">
+            <p className="text-xs sm:text-sm text-slate-500 max-w-2xl">
               Create and manage corporate conglomerates, establish isolated subsidiary companies, and provision dedicated users with granular RBAC permissions.
             </p>
           </div>
 
-          {/* Action CTAs */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <Button
-              size="sm"
+          {/* Action CTAs (All single line whitespace-nowrap) */}
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <button
+              type="button"
               onClick={handleOpenCreateGroup}
-              className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5 text-xs font-semibold shadow-2xs"
+              className="inline-flex items-center gap-1.5 bg-[#222026] hover:bg-[#19171C] text-white font-archivo text-xs font-semibold uppercase tracking-wide px-3.5 py-2.5 rounded-lg shadow-xs transition-colors whitespace-nowrap cursor-pointer"
             >
-              <Network className="w-3.5 h-3.5" />
-              New Group of Companies
-            </Button>
-            <Button
-              size="sm"
+              <Network className="w-4 h-4 text-white" />
+              <span>New Group of Companies</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setIsProvisionModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 text-xs font-semibold shadow-2xs"
+              className="inline-flex items-center gap-1.5 bg-[#FD3706] hover:bg-[#E02E00] text-white font-archivo text-xs font-semibold uppercase tracking-wide px-3.5 py-2.5 rounded-lg shadow-xs transition-colors whitespace-nowrap cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              1-Click Tenant Provisioner
-            </Button>
+              <Sparkles className="w-4 h-4 text-white" />
+              <span>1-Click Tenant Provisioner</span>
+            </button>
             <Button
               size="sm"
               variant="outline"
               onClick={fetchSuperAdminData}
               disabled={loading}
-              className="bg-white hover:bg-slate-50 text-slate-700 border-slate-200 text-xs gap-1.5"
+              className="bg-white hover:bg-slate-50 text-slate-700 border-slate-200 text-xs gap-1.5 whitespace-nowrap h-9 cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-              Sync
+              <span>Sync</span>
             </Button>
           </div>
         </div>
@@ -450,57 +450,57 @@ export default function SuperAdminDashboardPage() {
 
       {/* Navigation Tabs Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-3">
-        <div className="flex items-center gap-2 overflow-x-auto">
+        <div className="flex items-center gap-1.5 p-1 bg-[#F3F4F7] rounded-xl overflow-x-auto">
           <button
             type="button"
             onClick={() => setActiveTab("groups")}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
+            className={`px-3.5 py-1.5 rounded-lg font-archivo text-xs font-semibold uppercase tracking-wide flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
               activeTab === "groups"
-                ? "bg-amber-600 text-white shadow-xs"
-                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                ? "bg-[#FD3706] text-white shadow-xs"
+                : "text-slate-600 hover:text-[#222026] hover:bg-white"
             }`}
           >
-            <Network className="w-4 h-4" />
-            Groups of Companies ({groups.length})
+            <Network className="w-3.5 h-3.5" />
+            <span>Groups of Companies ({groups.length})</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab("companies")}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
+            className={`px-3.5 py-1.5 rounded-lg font-archivo text-xs font-semibold uppercase tracking-wide flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
               activeTab === "companies"
-                ? "bg-blue-600 text-white shadow-xs"
-                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                ? "bg-[#FD3706] text-white shadow-xs"
+                : "text-slate-600 hover:text-[#222026] hover:bg-white"
             }`}
           >
-            <Building2 className="w-4 h-4" />
-            Subsidiary Companies ({companies.length})
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Subsidiary Companies ({companies.length})</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab("users")}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
+            className={`px-3.5 py-1.5 rounded-lg font-archivo text-xs font-semibold uppercase tracking-wide flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
               activeTab === "users"
-                ? "bg-purple-600 text-white shadow-xs"
-                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                ? "bg-[#FD3706] text-white shadow-xs"
+                : "text-slate-600 hover:text-[#222026] hover:bg-white"
             }`}
           >
-            <Users className="w-4 h-4" />
-            Cross-Tenant Users ({users.length})
+            <Users className="w-3.5 h-3.5" />
+            <span>Cross-Tenant Users ({users.length})</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab("switcher")}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
+            className={`px-3.5 py-1.5 rounded-lg font-archivo text-xs font-semibold uppercase tracking-wide flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
               activeTab === "switcher"
-                ? "bg-slate-900 text-white shadow-xs"
-                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                ? "bg-[#FD3706] text-white shadow-xs"
+                : "text-slate-600 hover:text-[#222026] hover:bg-white"
             }`}
           >
-            <Briefcase className="w-4 h-4" />
-            Workspace Switcher
+            <Briefcase className="w-3.5 h-3.5" />
+            <span>Workspace Switcher</span>
           </button>
         </div>
 
