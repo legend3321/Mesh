@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { Search, ChevronDown, User, LogOut, Building, ShieldCheck } from "lucide-react";
+import { Search, ChevronDown, User, LogOut, Building, ShieldCheck, Menu } from "lucide-react";
 import { useCompany } from "./CompanyContext";
+import { useSidebar } from "./SidebarContext";
 import MeshLogoSvg from "./MeshLogoSvg";
 import {
   DropdownMenu,
@@ -17,6 +18,7 @@ import {
 export default function Header() {
   const { data: session } = useSession();
   const { currentCompany, activeCompanyId, isAllCompanies, companies, setCurrentCompanyId } = useCompany();
+  const { toggleMobile } = useSidebar();
   const [searchQuery, setSearchQuery] = useState("");
 
   const currentUserRole = ((session?.user as any)?.userRole || "EMPLOYEE") as string;
@@ -31,6 +33,17 @@ export default function Header() {
     <header className="sticky top-0 z-30 w-full h-16 bg-white/95 backdrop-blur-md border-b border-[#E5E7EB] px-4 sm:px-6 flex items-center justify-between gap-4 transition-all">
       {/* Brand & Context Title */}
       <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+        {/* Mobile / Tablet Drawer Hamburger Toggle */}
+        <button
+          type="button"
+          onClick={toggleMobile}
+          className="lg:hidden p-2 -ml-1 text-[#222026] hover:bg-[#F3F4F7] rounded-lg transition-colors cursor-pointer shrink-0"
+          title="Open Navigation"
+          aria-label="Open Navigation Drawer"
+        >
+          <Menu className="w-5 h-5 text-[#222026]" />
+        </button>
+
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2">

@@ -295,13 +295,6 @@ export default function DashboardOverviewPage() {
       const wholesale = p.SellPrice ? p.SellPrice.toFixed(2) : "218.00";
       const margin = "+42.8%";
 
-      const sampleThumbnails = [
-        "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=100&h=100&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=100&h=100&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=100&h=100&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1581092795360-fd1ca04f0952?w=100&h=100&fit=crop&q=80",
-      ];
-
       return {
         id: p.ProductID,
         sku: p.ProductCode || `MSH-${9400 + idx}-TX`,
@@ -318,7 +311,6 @@ export default function DashboardOverviewPage() {
         velocity: `${48 - idx * 8} / day`,
         statusText,
         statusColor,
-        thumbnail: sampleThumbnails[idx % sampleThumbnails.length],
       };
     });
   }, [products, inventories, tableSearch, selectedCategory]);
@@ -599,7 +591,7 @@ export default function DashboardOverviewPage() {
                     type="button"
                     disabled={replenishingId === item.inventoryId}
                     onClick={() => handleOverviewAutoPO(item)}
-                    className="w-full mt-0.5 h-8.5 rounded-lg bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer shadow-xs"
+                    className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-50 whitespace-nowrap cursor-pointer shadow-xs active:scale-[0.99]"
                   >
                     <Zap className="w-3.5 h-3.5 text-[#FD3706]" />
                     <span>Auto-PO Requisition</span>
@@ -634,7 +626,7 @@ export default function DashboardOverviewPage() {
                         description: "PO #REQ-7721 generated for Brushless High-Torque Motor (+120 units).",
                       });
                     }}
-                    className="w-full mt-0.5 h-8.5 rounded-lg bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer shadow-xs"
+                    className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all whitespace-nowrap cursor-pointer shadow-xs active:scale-[0.99]"
                   >
                     <Zap className="w-3.5 h-3.5 text-[#FD3706]" />
                     <span>Auto-PO Requisition</span>
@@ -664,7 +656,7 @@ export default function DashboardOverviewPage() {
                         description: "PO #REQ-3180 generated for Optical Infrared Gate S-40 (+250 units).",
                       });
                     }}
-                    className="w-full mt-0.5 h-8.5 rounded-lg bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer shadow-xs"
+                    className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all whitespace-nowrap cursor-pointer shadow-xs active:scale-[0.99]"
                   >
                     <Zap className="w-3.5 h-3.5 text-[#FD3706]" />
                     <span>Auto-PO Requisition</span>
@@ -694,7 +686,7 @@ export default function DashboardOverviewPage() {
                         description: "MSH-9402-TX is operating within optimal 30d safety margins.",
                       });
                     }}
-                    className="w-full mt-0.5 h-8.5 rounded-lg bg-[#222026] hover:bg-[#19171C] text-white font-archivo text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer shadow-xs"
+                    className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#222026] hover:bg-[#19171C] text-white font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all whitespace-nowrap cursor-pointer shadow-xs active:scale-[0.99]"
                   >
                     <span>Telemetry Optimal</span>
                   </button>
@@ -1030,20 +1022,13 @@ export default function DashboardOverviewPage() {
                         {row.sku}
                       </td>
                       <td className="py-3 px-3">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={row.thumbnail}
-                            alt={row.name}
-                            className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0 border border-slate-200"
-                          />
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-archivo text-xs font-bold text-[#222026] truncate">
-                              {row.name}
-                            </span>
-                            <span className="font-mono text-[11px] text-slate-400 truncate">
-                              {row.category}
-                            </span>
-                          </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-archivo text-xs font-bold text-[#222026] truncate">
+                            {row.name}
+                          </span>
+                          <span className="font-mono text-[11px] text-slate-400 truncate">
+                            {row.category}
+                          </span>
                         </div>
                       </td>
                       <td className="py-3 px-3">

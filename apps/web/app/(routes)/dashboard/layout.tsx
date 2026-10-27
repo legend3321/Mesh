@@ -10,9 +10,9 @@ import Header from "@/app/components/Header";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#F3F4F7] flex text-[#222026]">
+    <div className="min-h-screen bg-[#F3F4F7] flex flex-col lg:flex-row text-[#222026]">
       <Sidenav />
-      <div className="flex-1 min-w-0 flex flex-col bg-[#F3F4F7] overflow-x-hidden">
+      <div className="flex-1 min-w-0 flex flex-col bg-[#F3F4F7] min-h-screen overflow-x-hidden">
         <Header />
         <main className="flex-1 min-w-0 p-4 sm:p-6 overflow-y-auto">
           {children}

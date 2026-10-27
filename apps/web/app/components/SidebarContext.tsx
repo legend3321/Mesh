@@ -6,16 +6,23 @@ interface SidebarContextType {
   collapsed: boolean;
   setCollapsed: (collapsed: boolean | ((prev: boolean) => boolean)) => void;
   toggleSidebar: () => void;
+  mobileOpen: boolean;
+  setMobileOpen: (open: boolean) => void;
+  toggleMobile: () => void;
 }
 
 const SidebarContext = createContext<SidebarContextType>({
   collapsed: false,
   setCollapsed: () => {},
   toggleSidebar: () => {},
+  mobileOpen: false,
+  setMobileOpen: () => {},
+  toggleMobile: () => {},
 });
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   // Restore user's preference from localStorage if available
   useEffect(() => {
@@ -41,8 +48,21 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const toggleMobile = () => {
+    setMobileOpen((prev) => !prev);
+  };
+
   return (
-    <SidebarContext.Provider value={{ collapsed, setCollapsed, toggleSidebar }}>
+    <SidebarContext.Provider
+      value={{
+        collapsed,
+        setCollapsed,
+        toggleSidebar,
+        mobileOpen,
+        setMobileOpen,
+        toggleMobile,
+      }}
+    >
       {children}
     </SidebarContext.Provider>
   );
