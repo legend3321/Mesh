@@ -48,7 +48,8 @@ type FormData = z.infer<typeof FormSchema>;
 
 export const DEMO_ACCOUNTS = [
   {
-    company: "Mesh Holdings",
+    company: "Universal Platform",
+    group: "Apex Global Intermodal Group",
     role: "SUPERADMIN",
     name: "Ujjwal Chaudhary",
     email: "superadmin@mesh.com",
@@ -56,28 +57,40 @@ export const DEMO_ACCOUNTS = [
     tag: "SuperAdmin",
   },
   {
-    company: "Apex Logistics",
+    company: "Apex Pacific Freight",
+    group: "Apex Global Intermodal Group",
     role: "ADMIN",
-    name: "Ujjwal Chaudhary",
+    name: "Marcus Vance",
     email: "admin@mesh.com",
     password: "admin123",
     tag: "Apex Admin",
   },
   {
-    company: "Apex Logistics",
+    company: "Apex Pacific Freight",
+    group: "Apex Global Intermodal Group",
     role: "MANAGER",
-    name: "Alex Turner",
-    email: "manager@mesh.com",
+    name: "Sarah Jenkins",
+    email: "s.jenkins@mesh.com",
     password: "admin123",
-    tag: "Operations",
+    tag: "Apex Ops",
   },
   {
-    company: "Starlight Retail",
+    company: "Nordic Pulse Tech",
+    group: "Nordic Pulse Lifestyle & Electronics",
     role: "ADMIN",
     name: "Elena Rostova",
-    email: "starlight.admin@mesh.com",
+    email: "elena.rostova@mesh.com",
     password: "admin123",
-    tag: "Starlight",
+    tag: "Nordic Admin",
+  },
+  {
+    company: "Celestia Robotics",
+    group: "Celestia Robotics & Hardware Group",
+    role: "ADMIN",
+    name: "Dr. Klaus Becker",
+    email: "klaus.becker@mesh.com",
+    password: "admin123",
+    tag: "Celestia Admin",
   },
 ];
 
@@ -227,7 +240,7 @@ export default function LoginForm() {
                   <span className="font-mono text-[10px] text-slate-400">1-Click Auto Fill</span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
                   {DEMO_ACCOUNTS.map((demo) => {
                     const isSelected = activePersona === demo.email;
                     return (
@@ -242,9 +255,9 @@ export default function LoginForm() {
                         }`}
                       >
                         <span className="font-archivo text-xs font-bold truncate leading-tight">
-                          {demo.role}
+                          {demo.tag}
                         </span>
-                        <span className="font-mono text-[10px] text-slate-400 truncate">
+                        <span className="font-mono text-[9px] text-slate-400 truncate mt-0.5">
                           {demo.company}
                         </span>
                       </button>
