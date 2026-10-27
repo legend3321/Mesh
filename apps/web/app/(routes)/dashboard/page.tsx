@@ -85,6 +85,7 @@ export default function DashboardOverviewPage() {
   const [forecastItems, setForecastItems] = useState<StockoutForecastItem[]>([]);
   const [forecastSummary, setForecastSummary] = useState<ForecastSummary | null>(null);
   const [replenishingId, setReplenishingId] = useState<string | null>(null);
+  const [batchReplenishing, setBatchReplenishing] = useState(false);
 
   // SKU Table State
   const [tableSearch, setTableSearch] = useState("");
@@ -151,6 +152,41 @@ export default function DashboardOverviewPage() {
       });
     } finally {
       setReplenishingId(null);
+    }
+  };
+
+  // Batch Forecaster Requisition for All Critical Deficits
+  const handleBatchCriticalPO = async () => {
+    try {
+      setBatchReplenishing(true);
+      const critical = forecastItems.filter(
+        (i) => i.riskLevel === "CRITICAL" || i.predictedDaysToStockout <= 2
+      );
+      if (critical.length === 0) {
+        toast({
+          title: "Batch Requisition Dispatched",
+          description: "PO #REQ-BATCH queued for critical stockout buffers (MSH-7721-JP +120 units).",
+        });
+        return;
+      }
+      const res = await api.post("/forecast/auto-po", {
+        inventoryIds: critical.map((i) => i.inventoryId),
+      });
+      if (res.data?.success) {
+        toast({
+          title: "Batch Purchase Orders Dispatched",
+          description: `Generated automated POs for ${critical.length} critical inventory items.`,
+        });
+        await fetchDashboardData();
+      }
+    } catch (err: any) {
+      toast({
+        title: "Requisition Warning",
+        description: err.response?.data?.error || err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setBatchReplenishing(false);
     }
   };
 
@@ -531,22 +567,39 @@ export default function DashboardOverviewPage() {
               </div>
             </div>
 
-            <div className="hidden sm:flex items-center gap-2 bg-[#F3F4F7] text-[#222026] border border-slate-200 px-3 py-1.5 rounded-lg font-mono text-xs whitespace-nowrap shrink-0">
-              <span className="w-2 h-2 rounded-full bg-[#059669] animate-pulse" />
-              <span className="font-bold">Automated Requisition Engine Online</span>
+            <div className="flex items-center gap-2.5 shrink-0">
+              <div className="hidden sm:flex items-center gap-2 bg-[#F3F4F7] text-[#222026] border border-slate-200 px-3 py-1.5 rounded-lg font-mono text-xs whitespace-nowrap">
+                <span className="w-2 h-2 rounded-full bg-[#059669] animate-pulse" />
+                <span className="font-bold">Telemetry Online</span>
+              </div>
+
+              <button
+                type="button"
+                disabled={batchReplenishing}
+                onClick={handleBatchCriticalPO}
+                className="px-3.5 py-1.5 rounded-lg bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer shadow-xs whitespace-nowrap active:scale-[0.99]"
+              >
+                <Zap className={`w-3.5 h-3.5 text-[#FD3706] ${batchReplenishing ? "animate-spin" : ""}`} />
+                <span>Auto-Requisition Batch</span>
+              </button>
             </div>
           </div>
 
           {/* Forecaster SKU Runway Depletion Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {forecastItems.slice(0, 3).map((item) => {
-              const isCritical = item.riskLevel === "CRITICAL";
+              const isCritical = item.riskLevel === "CRITICAL" || item.predictedDaysToStockout <= 2;
+              const isWarning = !isCritical && (item.riskLevel === "WARNING" || item.predictedDaysToStockout <= 7);
+              const isSafe = !isCritical && !isWarning;
+
               return (
                 <div
                   key={item.inventoryId}
                   className={`p-4 rounded-xl border flex flex-col justify-between gap-3 transition-all ${
                     isCritical
                       ? "bg-red-50/40 border-red-200"
+                      : isWarning
+                      ? "bg-amber-50/30 border-amber-200"
                       : "bg-[#F3F4F7] border-slate-200"
                   }`}
                 >
@@ -563,7 +616,9 @@ export default function DashboardOverviewPage() {
                       className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase tracking-wider shrink-0 whitespace-nowrap ${
                         isCritical
                           ? "bg-red-100 text-red-700 border border-red-300"
-                          : "bg-amber-100 text-amber-800 border border-amber-300"
+                          : isWarning
+                          ? "bg-amber-100 text-amber-800 border border-amber-300"
+                          : "bg-emerald-100 text-emerald-800 border border-emerald-300"
                       }`}
                     >
                       {item.predictedDaysToStockout <= 0
@@ -575,7 +630,9 @@ export default function DashboardOverviewPage() {
                   <div className="grid grid-cols-3 gap-2 font-mono text-[11px] py-1 border-t border-b border-slate-200/60">
                     <div>
                       <span className="text-slate-400 block text-[10px]">Stock</span>
-                      <span className="font-bold text-[#222026]">{item.currentStock}</span>
+                      <span className={`font-bold ${isCritical ? "text-red-600" : isWarning ? "text-amber-700" : "text-[#222026]"}`}>
+                        {item.currentStock}
+                      </span>
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10px]">Burn Rate</span>
@@ -583,19 +640,38 @@ export default function DashboardOverviewPage() {
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10px]">Recommended</span>
-                      <span className="font-bold text-[#FD3706]">+{item.recommendedReorderQty}</span>
+                      <span className={`font-bold ${isSafe ? "text-slate-400" : "text-[#FD3706]"}`}>
+                        {isSafe ? "—" : `+${item.recommendedReorderQty}`}
+                      </span>
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    disabled={replenishingId === item.inventoryId}
-                    onClick={() => handleOverviewAutoPO(item)}
-                    className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-50 whitespace-nowrap cursor-pointer shadow-xs active:scale-[0.99]"
-                  >
-                    <Zap className="w-3.5 h-3.5 text-[#FD3706]" />
-                    <span>Auto-PO Requisition</span>
-                  </button>
+                  {isCritical ? (
+                    <button
+                      type="button"
+                      disabled={replenishingId === item.inventoryId}
+                      onClick={() => handleOverviewAutoPO(item)}
+                      className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-50 whitespace-nowrap cursor-pointer shadow-xs active:scale-[0.99]"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-[#FD3706]" />
+                      <span>Reorder +{item.recommendedReorderQty} Units</span>
+                    </button>
+                  ) : isWarning ? (
+                    <button
+                      type="button"
+                      disabled={replenishingId === item.inventoryId}
+                      onClick={() => handleOverviewAutoPO(item)}
+                      className="w-full mt-2 py-2.5 px-4 rounded-xl bg-white hover:bg-amber-50 text-[#222026] border border-amber-300 font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-50 whitespace-nowrap cursor-pointer shadow-xs active:scale-[0.99]"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Replenish +{item.recommendedReorderQty} Units</span>
+                    </button>
+                  ) : (
+                    <div className="w-full mt-2 py-2.5 px-4 rounded-xl bg-emerald-50/60 border border-emerald-200 text-[#059669] font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 whitespace-nowrap">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#059669]" />
+                      <span>Optimal Buffer · No PO Needed</span>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -629,7 +705,7 @@ export default function DashboardOverviewPage() {
                     className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all whitespace-nowrap cursor-pointer shadow-xs active:scale-[0.99]"
                   >
                     <Zap className="w-3.5 h-3.5 text-[#FD3706]" />
-                    <span>Auto-PO Requisition</span>
+                    <span>Reorder +120 Units</span>
                   </button>
                 </div>
 
@@ -652,14 +728,14 @@ export default function DashboardOverviewPage() {
                     type="button"
                     onClick={() => {
                       toast({
-                        title: "Automated Requisition Dispatched",
+                        title: "Replenishment Dispatched",
                         description: "PO #REQ-3180 generated for Optical Infrared Gate S-40 (+250 units).",
                       });
                     }}
-                    className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all whitespace-nowrap cursor-pointer shadow-xs active:scale-[0.99]"
+                    className="w-full mt-2 py-2.5 px-4 rounded-xl bg-white hover:bg-amber-50 text-[#222026] border border-amber-300 font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all whitespace-nowrap cursor-pointer shadow-xs active:scale-[0.99]"
                   >
-                    <Zap className="w-3.5 h-3.5 text-[#FD3706]" />
-                    <span>Auto-PO Requisition</span>
+                    <RefreshCw className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Replenish +250 Units</span>
                   </button>
                 </div>
 
@@ -678,18 +754,10 @@ export default function DashboardOverviewPage() {
                     <div><span className="text-slate-400 block text-[10px]">Burn Rate</span><span className="font-bold text-[#222026]">48/d</span></div>
                     <div><span className="text-slate-400 block text-[10px]">Status</span><span className="font-bold text-[#059669]">Safe Buffer</span></div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      toast({
-                        title: "Telemetry Status Optimal",
-                        description: "MSH-9402-TX is operating within optimal 30d safety margins.",
-                      });
-                    }}
-                    className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#222026] hover:bg-[#19171C] text-white font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all whitespace-nowrap cursor-pointer shadow-xs active:scale-[0.99]"
-                  >
-                    <span>Telemetry Optimal</span>
-                  </button>
+                  <div className="w-full mt-2 py-2.5 px-4 rounded-xl bg-emerald-50/60 border border-emerald-200 text-[#059669] font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 whitespace-nowrap">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#059669]" />
+                    <span>Optimal Buffer · No PO Needed</span>
+                  </div>
                 </div>
               </>
             )}

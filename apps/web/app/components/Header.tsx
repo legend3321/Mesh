@@ -6,6 +6,7 @@ import { Search, ChevronDown, User, LogOut, Building, ShieldCheck, Menu } from "
 import { useCompany } from "./CompanyContext";
 import { useSidebar } from "./SidebarContext";
 import MeshLogoSvg from "./MeshLogoSvg";
+import GlobalSearchModal from "./GlobalSearchModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +20,7 @@ export default function Header() {
   const { data: session } = useSession();
   const { currentCompany, activeCompanyId, isAllCompanies, companies, setCurrentCompanyId } = useCompany();
   const { toggleMobile } = useSidebar();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   const currentUserRole = ((session?.user as any)?.userRole || "EMPLOYEE") as string;
   const isSuperAdmin = currentUserRole === "SUPERADMIN";
@@ -117,18 +118,33 @@ export default function Header() {
       </div>
 
       {/* Right Controls: Search Capsule, Currency Pill, User Profile (NO Notification Icon) */}
-      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-        {/* Quick Search */}
-        <div className="hidden lg:flex items-center bg-[#F3F4F7] px-3 py-1.5 rounded-lg border border-transparent focus-within:border-slate-300 focus-within:bg-white transition-all">
-          <Search className="w-4 h-4 text-slate-400 shrink-0" />
-          <input
-            type="text"
-            placeholder="Search SKUs, Containers, POs..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-transparent border-0 outline-none text-xs text-[#222026] placeholder:text-slate-400 w-44 xl:w-56 ml-2"
-          />
-        </div>
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Quick Search Button (Desktop) */}
+        <button
+          type="button"
+          onClick={() => setSearchModalOpen(true)}
+          className="hidden lg:flex items-center justify-between bg-[#F3F4F7] hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-transparent hover:border-slate-300 transition-all text-xs text-slate-500 w-48 xl:w-64 cursor-pointer"
+          title="Search Mesh platform (⌘K / Ctrl+K)"
+        >
+          <div className="flex items-center gap-2 truncate">
+            <Search className="w-4 h-4 text-slate-400 shrink-0" />
+            <span className="truncate">Search SKUs, POs, Depots...</span>
+          </div>
+          <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono font-semibold bg-white border border-slate-200 rounded text-slate-500 shadow-2xs">
+            <span className="text-xs">⌘</span>K
+          </kbd>
+        </button>
+
+        {/* Quick Search Icon Button (Mobile / Tablet) */}
+        <button
+          type="button"
+          onClick={() => setSearchModalOpen(true)}
+          className="lg:hidden p-2 text-[#222026] hover:bg-[#F3F4F7] rounded-lg transition-colors cursor-pointer shrink-0"
+          title="Search Mesh platform"
+          aria-label="Open Global Search"
+        >
+          <Search className="w-5 h-5 text-slate-600" />
+        </button>
 
         {/* Currency Capsule */}
         <div className="hidden sm:inline-flex items-center px-2.5 py-1.5 rounded-lg bg-[#F3F4F7] text-[#222026] font-mono text-xs font-semibold border border-transparent whitespace-nowrap shrink-0">
@@ -172,6 +188,9 @@ export default function Header() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Global Command Palette Search Modal */}
+      <GlobalSearchModal open={searchModalOpen} onOpenChange={setSearchModalOpen} />
     </header>
   );
 }
