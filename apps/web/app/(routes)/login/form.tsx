@@ -16,7 +16,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import {
@@ -31,15 +30,19 @@ import {
   Sparkles,
   AlertCircle,
   CheckCircle2,
+  Building,
+  Headphones,
+  X,
+  PhoneCall,
+  ChevronDown,
 } from "lucide-react";
-import MeshLogoSvg from "@/app/components/MeshLogoSvg";
 
 const FormSchema = z.object({
   userEmail: z.string().email({
-    message: "Please enter a valid corporate email address.",
+    message: "Please enter a valid corporate dispatch email address.",
   }),
   userPassword: z.string().min(5, {
-    message: "Password must be at least 6 characters.",
+    message: "Security passphrase must be at least 6 characters.",
   }),
 });
 
@@ -50,11 +53,10 @@ export const DEMO_ACCOUNTS = [
     company: "Mesh Global Holdings",
     companyCode: "SUPER-00",
     role: "SUPERADMIN",
-    name: "Ujjwal Chaudhary (SuperAdmin)",
+    name: "Ujjwal Chaudhary",
     email: "superadmin@mesh.com",
     password: "admin123",
     tag: "Platform SuperAdmin (Me)",
-    accent: "from-amber-500 to-purple-600",
   },
   {
     company: "Apex Logistics",
@@ -64,7 +66,6 @@ export const DEMO_ACCOUNTS = [
     email: "admin@mesh.com",
     password: "admin123",
     tag: "Apex Corp Admin",
-    accent: "from-blue-600 to-indigo-600",
   },
   {
     company: "Apex Logistics",
@@ -74,7 +75,6 @@ export const DEMO_ACCOUNTS = [
     email: "manager@mesh.com",
     password: "admin123",
     tag: "Apex Operations Lead",
-    accent: "from-cyan-600 to-blue-600",
   },
   {
     company: "Starlight Retail",
@@ -84,15 +84,18 @@ export const DEMO_ACCOUNTS = [
     email: "starlight.admin@mesh.com",
     password: "admin123",
     tag: "Starlight Global Admin",
-    accent: "from-purple-600 to-pink-600",
   },
 ];
 
 export default function LoginForm() {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<"credentials" | "demo" | "sso">("credentials");
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [activePersona, setActivePersona] = useState<string | null>("superadmin@mesh.com");
+  const [isOverrideModalOpen, setIsOverrideModalOpen] = useState(false);
+  const [selectedHub, setSelectedHub] = useState("ORD-01");
+  const [rememberShift, setRememberShift] = useState(true);
 
   const form = useForm<FormData>({
     resolver: zodResolver(FormSchema),
@@ -107,9 +110,10 @@ export default function LoginForm() {
     setAuthError(null);
     form.setValue("userEmail", demo.email);
     form.setValue("userPassword", demo.password);
+    setActiveTab("credentials");
     toast({
       title: "Demo Credentials Loaded",
-      description: `Loaded ${demo.name} (${demo.role}) for ${demo.company} (${demo.companyCode}).`,
+      description: `Loaded ${demo.name} (${demo.role}) for ${demo.company}.`,
     });
   };
 
@@ -125,7 +129,7 @@ export default function LoginForm() {
       });
 
       if (!response?.ok || response?.error) {
-        setAuthError("Invalid corporate email or password. Please verify your credentials.");
+        setAuthError("Invalid corporate dispatch email or security passphrase. Please verify your credentials.");
         toast({
           title: "Authentication Failed",
           description: "Could not authenticate with provided credentials.",
@@ -136,7 +140,7 @@ export default function LoginForm() {
 
       toast({
         title: "Authentication Successful",
-        description: "Launching Mesh Enterprise Command Center...",
+        description: "Entering Mesh Supply Chain Gateway...",
       });
 
       if (userEmail.toLowerCase().includes("superadmin")) {
@@ -157,240 +161,374 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      {/* Mobile Branding Header (visible only on smaller screens) */}
-      <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-        <div className="w-10 h-10 rounded-xl bg-blue-600/30 border border-blue-400/30 flex items-center justify-center text-white shadow-xs">
-          <MeshLogoSvg size={22} />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-            Mesh
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">
-              v2.4
+    <>
+      <Toaster />
+      <div className="bg-white rounded-2xl shadow-xl border border-[#E5E7EB] p-6 sm:p-10 flex flex-col transition-all">
+        {/* Card Header & Tab Switcher from Stitch */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+          <div className="flex flex-col">
+            <span className="font-mono text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+              Checkpoint Terminal 04
             </span>
-          </h1>
-          <p className="text-xs text-slate-400">Enterprise Supply Chain Platform</p>
-        </div>
-      </div>
-
-      {/* Main Glassmorphic Form Card */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl backdrop-blur-xl p-6 sm:p-8">
-        {/* Card Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              Multi-Tenant Portal
-            </span>
-            <span className="text-[11px] font-medium text-emerald-400 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              API Gateway Ready
-            </span>
-          </div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">
-            Sign In to Workspace
-          </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Authenticate to access isolated corporate ledgers, inventory hubs, and real-time telemetry.
-          </p>
-        </div>
-
-        {/* 1-Click Demo Persona Selector */}
-        <div className="mb-6 bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80">
-          <div className="flex items-center justify-between mb-2.5">
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-              <p className="text-xs font-semibold text-slate-200">
-                1-Click Quick Demo Accounts
-              </p>
-            </div>
-            <span className="text-[10px] text-slate-500 font-mono">Instant Fill</span>
+            <h1 className="font-archivo text-2xl font-bold uppercase tracking-tight text-[#222026]">
+              Identity Authentication
+            </h1>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            {DEMO_ACCOUNTS.map((demo) => {
-              const isSelected = activePersona === demo.email;
-              return (
-                <button
-                  key={demo.email}
-                  type="button"
-                  onClick={() => handleSelectDemoAccount(demo)}
-                  className={`flex flex-col text-left p-2.5 rounded-lg border transition-all text-xs relative group ${
-                    isSelected
-                      ? "bg-blue-600/20 border-blue-500/60 text-white shadow-xs"
-                      : "bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-800/60"
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <span className="font-semibold text-white truncate max-w-[90px]">
-                      {demo.company}
-                    </span>
-                    <span
-                      className={`text-[9px] font-bold px-1.5 py-0.2 rounded font-mono ${
-                        demo.role === "SUPERADMIN"
-                          ? "bg-gradient-to-r from-amber-500/30 to-purple-500/30 text-amber-300 border border-amber-400/40"
-                          : demo.role === "ADMIN"
-                          ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
-                          : demo.role === "MANAGER"
-                          ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                          : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                      }`}
-                    >
-                      {demo.role}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 truncate w-full">
-                    {demo.name}
-                  </p>
-                  <p className="text-[10px] text-slate-500 font-mono truncate w-full mt-0.5">
-                    {demo.email}
-                  </p>
-                  {isSelected && (
-                    <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue-400" />
-                  )}
-                </button>
-              );
-            })}
+          <div className="inline-flex p-1 bg-[#F3F4F7] rounded-xl self-start sm:self-auto shadow-inner">
+            <button
+              type="button"
+              onClick={() => setActiveTab("credentials")}
+              className={`px-3 py-1.5 rounded-lg font-archivo text-xs font-semibold uppercase tracking-wide transition-all ${
+                activeTab === "credentials"
+                  ? "bg-[#FD3706] text-white shadow-xs"
+                  : "text-slate-500 hover:text-[#222026]"
+              }`}
+            >
+              Credentials
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("demo")}
+              className={`px-3 py-1.5 rounded-lg font-archivo text-xs font-semibold uppercase tracking-wide transition-all ${
+                activeTab === "demo"
+                  ? "bg-[#FD3706] text-white shadow-xs"
+                  : "text-slate-500 hover:text-[#222026]"
+              }`}
+            >
+              Demo Personas
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("sso")}
+              className={`px-3 py-1.5 rounded-lg font-archivo text-xs font-semibold uppercase tracking-wide transition-all ${
+                activeTab === "sso"
+                  ? "bg-[#FD3706] text-white shadow-xs"
+                  : "text-slate-500 hover:text-[#222026]"
+              }`}
+            >
+              Enterprise SSO
+            </button>
           </div>
+        </div>
+
+        {/* Live Cluster Status Banner */}
+        <div className="my-5 p-3 rounded-xl bg-[#F3F4F7] flex items-center justify-between font-mono text-xs text-slate-600">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#059669] animate-pulse" />
+            <span className="text-[#222026] font-bold uppercase">
+              Cluster ORD-01 Active
+            </span>
+          </div>
+          <span className="text-slate-400">TLS 1.3 · FIDO2 Enforced</span>
         </div>
 
         {/* Auth Error Banner */}
         {authError && (
-          <div className="mb-5 p-3 rounded-xl bg-red-950/40 border border-red-500/30 flex items-start gap-2.5 text-xs text-red-300">
-            <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+          <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{authError}</span>
           </div>
         )}
 
-        {/* Credentials Form */}
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Email Field */}
-            <FormField
-              control={form.control}
-              name="userEmail"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs font-semibold text-slate-300 flex items-center justify-between">
-                    <span>Corporate Email</span>
-                    <span className="text-[11px] font-normal text-slate-500">
-                      e.g. admin@mesh.com
-                    </span>
-                  </FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <Input
-                        {...field}
-                        type="email"
-                        placeholder="yourname@organization.com"
-                        className="pl-10 bg-slate-950/80 border-slate-700/80 text-white placeholder:text-slate-600 focus-visible:ring-blue-500 focus-visible:border-blue-500 rounded-xl h-11 text-sm"
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage className="text-xs text-red-400" />
-                </FormItem>
-              )}
-            />
-
-            {/* Password Field */}
-            <FormField
-              control={form.control}
-              name="userPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex items-center justify-between">
-                    <FormLabel className="text-xs font-semibold text-slate-300">
-                      Password
+        {/* TAB 1: Credentials Form */}
+        {activeTab === "credentials" && (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {/* Email / Dispatch ID */}
+              <FormField
+                control={form.control}
+                name="userEmail"
+                render={({ field }) => (
+                  <FormItem className="space-y-1.5">
+                    <FormLabel className="font-mono text-xs font-semibold uppercase tracking-wider text-[#222026]">
+                      Work Email / Dispatch ID
                     </FormLabel>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        toast({
-                          title: "Default Password",
-                          description: "All demo accounts use password: 'admin123'",
-                        })
-                      }
-                      className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors"
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-                  <FormControl>
-                    <div className="relative">
-                      <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <Input
-                        {...field}
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••••••"
-                        className="pl-10 pr-10 bg-slate-950/80 border-slate-700/80 text-white placeholder:text-slate-600 focus-visible:ring-blue-500 focus-visible:border-blue-500 rounded-xl h-11 text-sm font-mono"
-                      />
+                    <FormControl>
+                      <div className="relative">
+                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input
+                          {...field}
+                          type="email"
+                          placeholder="operator-id@mesh-scm.io"
+                          className="w-full h-11 pl-10 pr-4 rounded-xl bg-[#F3F4F7] text-[#222026] font-mono text-xs border border-transparent focus:bg-white focus:border-[#FD3706] outline-none transition-all"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage className="text-xs text-red-600 font-mono" />
+                  </FormItem>
+                )}
+              />
+
+              {/* Master Password */}
+              <FormField
+                control={form.control}
+                name="userPassword"
+                render={({ field }) => (
+                  <FormItem className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <FormLabel className="font-mono text-xs font-semibold uppercase tracking-wider text-[#222026]">
+                        Master Password / Security Token
+                      </FormLabel>
                       <button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                        title={showPassword ? "Hide password" : "Show password"}
+                        onClick={() => setIsOverrideModalOpen(true)}
+                        className="font-mono text-[11px] text-[#FD3706] hover:underline font-semibold"
                       >
-                        {showPassword ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
+                        Forgot Master Key?
                       </button>
                     </div>
-                  </FormControl>
-                  <FormMessage className="text-xs text-red-400" />
-                </FormItem>
-              )}
-            />
+                    <FormControl>
+                      <div className="relative">
+                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input
+                          {...field}
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter secure passphrase"
+                          className="w-full h-11 pl-10 pr-11 rounded-xl bg-[#F3F4F7] text-[#222026] font-mono text-xs border border-transparent focus:bg-white focus:border-[#FD3706] outline-none transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#222026] p-1"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage className="text-xs text-red-600 font-mono" />
+                  </FormItem>
+                )}
+              />
 
-            {/* Remember Me Option */}
-            <div className="flex items-center justify-between pt-1 text-xs text-slate-400">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  defaultChecked
-                  className="rounded border-slate-700 bg-slate-950 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900 w-3.5 h-3.5"
-                />
-                <span>Remember session for this device</span>
-              </label>
+              {/* Depot Node / Hub Facility Selector */}
+              <div className="space-y-1.5">
+                <label className="block font-mono text-xs font-semibold uppercase tracking-wider text-[#222026]">
+                  Depot Node / Hub Facility
+                </label>
+                <div className="relative">
+                  <Building className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <select
+                    value={selectedHub}
+                    onChange={(e) => setSelectedHub(e.target.value)}
+                    className="w-full h-11 pl-10 pr-9 rounded-xl bg-[#F3F4F7] text-[#222026] font-mono text-xs border border-transparent focus:bg-white focus:border-[#FD3706] appearance-none outline-none cursor-pointer transition-all"
+                  >
+                    <option value="ORD-01">ORD-01 Chicago Air Freight & Cross-Dock (Primary Node)</option>
+                    <option value="DFW-04">DFW-04 Dallas Intra-Modal High Speed Rail Depot</option>
+                    <option value="LAX-09">LAX-09 Long Beach Deepwater Marine Terminal</option>
+                    <option value="EWR-02">EWR-02 Newark Global Intermodal Gateway</option>
+                  </select>
+                  <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none w-4 h-4 text-slate-400" />
+                </div>
+              </div>
+
+              {/* Workstation Shift Checkbox */}
+              <div className="flex items-center justify-between pt-1">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={rememberShift}
+                    onChange={(e) => setRememberShift(e.target.checked)}
+                    className="w-4 h-4 rounded accent-[#FD3706] cursor-pointer"
+                  />
+                  <span className="font-sans text-xs text-slate-700">
+                    Remember workstation for 12h operational shift
+                  </span>
+                </label>
+                <span className="font-mono text-[11px] text-slate-400">Idle timeout: 15m</span>
+              </div>
+
+              {/* Primary Submit Button from Stitch */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={form.formState.isSubmitting}
+                  className="w-full h-12 rounded-xl bg-[#FD3706] hover:bg-[#E02E00] text-white font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer"
+                >
+                  {form.formState.isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>Verifying Cryptographic Tokens...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Authenticate & Enter Gateway</span>
+                      <ArrowRight className="w-4 h-4 text-white" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </Form>
+        )}
+
+        {/* TAB 2: Demo Personas (1-Click Instant Fill) */}
+        {activeTab === "demo" && (
+          <div className="space-y-4">
+            <p className="text-xs text-slate-500 font-sans">
+              Select any pre-configured enterprise role to immediately populate authentication tokens and enter the corresponding control plane:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {DEMO_ACCOUNTS.map((demo) => {
+                const isSelected = activePersona === demo.email;
+                return (
+                  <button
+                    key={demo.email}
+                    type="button"
+                    onClick={() => handleSelectDemoAccount(demo)}
+                    className={`flex flex-col text-left p-3 rounded-xl border transition-all text-xs cursor-pointer ${
+                      isSelected
+                        ? "bg-[#FD3706]/5 border-[#FD3706] shadow-xs"
+                        : "bg-[#F3F4F7] border-transparent hover:border-slate-300 hover:bg-slate-100"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full mb-1">
+                      <span className="font-archivo font-bold text-[#222026] truncate">
+                        {demo.company}
+                      </span>
+                      <span
+                        className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                          demo.role === "SUPERADMIN"
+                            ? "bg-[#222026] text-white"
+                            : "bg-[#FD3706]/15 text-[#FD3706]"
+                        }`}
+                      >
+                        {demo.role}
+                      </span>
+                    </div>
+                    <span className="text-xs text-slate-600 font-medium truncate">{demo.name}</span>
+                    <span className="text-[11px] text-slate-400 font-mono truncate mt-0.5">{demo.email}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveTab("credentials")}
+              className="w-full mt-2 h-10 rounded-xl bg-[#222026] hover:bg-[#19171C] text-white font-archivo text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <span>Proceed to Login with Selected Account</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* TAB 3: Enterprise SSO from Stitch */}
+        {activeTab === "sso" && (
+          <div className="space-y-4">
+            <div className="p-4 rounded-xl bg-[#F3F4F7] text-[#222026] space-y-1.5">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-[#FD3706]" />
+                <span className="font-archivo text-xs font-bold uppercase text-[#222026]">
+                  Federated Identity Directory
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Authenticate through your corporate identity provider. Okta, Azure AD, and Google Workspace are pre-configured for automated depot role assignments.
+              </p>
             </div>
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              disabled={form.formState.isSubmitting}
-              className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/25 gap-2 mt-2"
-            >
-              {form.formState.isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Verifying Credentials...</span>
-                </>
-              ) : (
-                <>
-                  <span>Sign In to Dashboard</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </Button>
-          </form>
-        </Form>
+            <div className="space-y-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  toast({
+                    title: "Okta Enterprise SSO",
+                    description: "Redirecting to corporate identity provider...",
+                  });
+                }}
+                className="w-full h-12 rounded-xl bg-[#222026] hover:bg-[#19171C] text-white font-archivo text-xs font-semibold flex items-center justify-between px-4 transition-all shadow-md cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="w-6 h-6 rounded-md bg-white flex items-center justify-center text-[#222026] font-bold text-xs font-archivo">
+                    O
+                  </span>
+                  <span>Sign in via Okta Enterprise SSO</span>
+                </div>
+                <span className="font-mono text-[10px] text-slate-300">SAML 2.0</span>
+              </button>
 
-        {/* Card Footer Security Tag */}
-        <div className="mt-6 pt-5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
-          <span className="flex items-center gap-1.5">
-            <Building2 className="w-3.5 h-3.5 text-slate-400" />
-            Apex &bull; Starlight Multi-Tenant
-          </span>
-          <span className="flex items-center gap-1 text-emerald-400/90 font-medium">
-            <CheckCircle2 className="w-3 h-3" />
-            256-Bit SSL Enforced
-          </span>
+              <button
+                type="button"
+                onClick={() => {
+                  toast({
+                    title: "Microsoft Entra ID",
+                    description: "Initiating OIDC enterprise flow...",
+                  });
+                }}
+                className="w-full h-12 rounded-xl bg-[#F3F4F7] hover:bg-slate-200 text-[#222026] font-archivo text-xs font-semibold flex items-center justify-between px-4 transition-all cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <Building2 className="w-5 h-5 text-slate-600" />
+                  <span>Sign in via Microsoft Entra ID (Azure AD)</span>
+                </div>
+                <span className="font-mono text-[10px] text-slate-400">OIDC Direct</span>
+              </button>
+            </div>
+
+            <div className="p-3 bg-[#F3F4F7] rounded-xl flex items-center justify-between font-mono text-[11px] text-slate-500">
+              <span>SCIM 2.0 Auto-Provisioning Active</span>
+              <span className="text-[#059669] font-semibold">Tenant Verified</span>
+            </div>
+          </div>
+        )}
+
+        {/* Bottom Status Policy & Override Trigger from Stitch */}
+        <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-slate-400 font-mono text-xs">
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-slate-400" />
+            <span>Strict Mutual TLS Policy</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsOverrideModalOpen(true)}
+            className="text-[#FD3706] hover:underline font-semibold uppercase flex items-center gap-1 cursor-pointer"
+          >
+            <span>Override Support</span>
+            <Headphones className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
-      <Toaster />
-    </div>
+
+      {/* Emergency NOC Override Modal from Stitch */}
+      {isOverrideModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 space-y-4 border border-slate-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-[#FD3706]" />
+                <h3 className="font-archivo text-base font-bold uppercase text-[#222026]">
+                  Emergency Override Channel
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOverrideModalOpen(false)}
+                className="text-slate-400 hover:text-[#222026] p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 font-sans leading-relaxed">
+              In the event of hardware MFA desynchronization, token loss, or facility lockdown, contact the 24/7 Global Dispatch NOC operations team immediately:
+            </p>
+
+            <div className="p-3.5 rounded-xl bg-[#F3F4F7] font-mono text-xs text-[#222026] font-bold text-center border border-slate-200 flex items-center justify-center gap-2">
+              <PhoneCall className="w-4 h-4 text-[#FD3706]" />
+              <span>DISPATCH NOC: +1 (800) 555-MESH-911</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsOverrideModalOpen(false)}
+              className="w-full h-10 rounded-xl bg-[#222026] text-white font-archivo text-xs font-semibold uppercase tracking-wider hover:bg-[#19171C] transition-colors cursor-pointer"
+            >
+              Acknowledge & Return
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
