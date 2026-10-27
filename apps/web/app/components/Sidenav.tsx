@@ -58,7 +58,6 @@ export default function Sidenav() {
       title: "Operations",
       items: [
         { name: "Overview", path: "", icon: LayoutDashboard },
-        { name: "Forecaster", path: "/forecast", icon: BrainCircuit },
         { name: "Orders", path: "/order", icon: ListCheck },
         { name: "Transfers", path: "/transfer", icon: ArrowLeftRight },
       ],

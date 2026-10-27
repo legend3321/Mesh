@@ -16,7 +16,6 @@ import {
   AlertTriangle,
   RefreshCw,
   ArrowUpRight,
-  ArrowRight,
   CheckCircle2,
   Clock,
   MapPin,
@@ -395,7 +394,7 @@ export default function DashboardOverviewPage() {
         {/* 2. Hero Tri-Tone Telemetry Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Card 1: Deep Charcoal Card (#222026) */}
-          <div className="bg-[#222026] text-white rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden">
+          <div className="bg-[#222026] text-white rounded-2xl p-5 sm:p-6 min-h-[190px] flex flex-col justify-between shadow-sm relative overflow-hidden">
             <div className="flex items-center justify-between">
               <span className="font-mono text-xs uppercase tracking-wider text-[#CAC5CD] font-medium whitespace-nowrap">
                 Total Valuated Stock
@@ -426,12 +425,12 @@ export default function DashboardOverviewPage() {
           </div>
 
           {/* Card 2: Electric Orange Card (#FD3706) */}
-          <div className="bg-[#FD3706] text-white rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden">
+          <div className="bg-[#FD3706] text-white rounded-2xl p-5 sm:p-6 min-h-[190px] flex flex-col justify-between shadow-sm relative overflow-hidden">
             <div className="flex items-center justify-between">
               <span className="font-mono text-xs uppercase tracking-wider text-white/90 font-medium whitespace-nowrap">
-                Stock Buffer & Safety Ratio
+                Safety Buffer
               </span>
-              <span className="px-2 py-0.5 rounded bg-black/20 font-mono text-[11px] font-bold tracking-wide whitespace-nowrap">
+              <span className="px-2 py-0.5 rounded bg-black/25 font-mono text-[11px] font-bold tracking-wide whitespace-nowrap">
                 23% / 77%
               </span>
             </div>
@@ -459,14 +458,14 @@ export default function DashboardOverviewPage() {
           </div>
 
           {/* Card 3: Surface White Card with Deficit (#FFFFFF) */}
-          <div className="bg-white rounded-2xl p-5 flex flex-col justify-between shadow-sm border border-[#E5E7EB]">
+          <div className="bg-white rounded-2xl p-5 sm:p-6 min-h-[190px] flex flex-col justify-between shadow-sm border border-[#E5E7EB]">
             <div className="flex items-center justify-between">
               <span className="font-mono text-xs uppercase tracking-wider text-slate-500 font-medium whitespace-nowrap">
-                Stockout Deficit
+                Deficit Alerts
               </span>
-              <span className="flex items-center gap-1.5 font-mono text-xs text-[#DC2626] font-semibold whitespace-nowrap">
-                <span className="w-1.5 h-1.5 bg-[#DC2626] inline-block rounded-xs" />
-                IMMEDIATE PO
+              <span className="flex items-center gap-1.5 font-mono text-xs text-[#DC2626] font-bold whitespace-nowrap">
+                <span>■</span>
+                <span>IMMEDIATE PO</span>
               </span>
             </div>
 
@@ -476,8 +475,7 @@ export default function DashboardOverviewPage() {
                 <span className="text-sm font-normal text-slate-400">SKUs</span>
               </span>
               <div className="flex items-center gap-1.5 mt-1 font-mono text-xs text-slate-500 whitespace-nowrap">
-                <span className="text-[#DC2626] font-semibold">8 backorders</span>
-                <span>impacted across hubs</span>
+                <span className="text-[#DC2626] font-semibold">8 backorders impacted</span>
               </div>
             </div>
 
@@ -487,14 +485,14 @@ export default function DashboardOverviewPage() {
           </div>
 
           {/* Card 4: Platinum Silver Card (#DBDBDB) */}
-          <div className="bg-[#DBDBDB] text-[#222026] rounded-2xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden">
+          <div className="bg-[#DBDBDB] text-[#222026] rounded-2xl p-5 sm:p-6 min-h-[190px] flex flex-col justify-between shadow-sm relative overflow-hidden">
             <div className="flex items-center justify-between">
               <span className="font-mono text-xs uppercase tracking-wider text-[#222026] font-semibold whitespace-nowrap">
-                Inventory Turnover Rate
+                Turnover Rate
               </span>
               <span className="flex items-center gap-1.5 font-mono text-xs text-[#059669] font-bold whitespace-nowrap">
-                <span className="w-1.5 h-1.5 bg-[#059669] inline-block rounded-xs" />
-                OPTIMAL
+                <span>■</span>
+                <span>OPTIMAL</span>
               </span>
             </div>
 
@@ -522,9 +520,9 @@ export default function DashboardOverviewPage() {
         {/* 3. INTEGRATED FORECASTER SECTION IN OVERVIEW */}
         <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-[#E5E7EB] flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <div className="w-8 h-8 rounded-lg bg-[#222026] text-[#FD3706] flex items-center justify-center shrink-0">
-                <BrainCircuit className="w-4 h-4" />
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-[#222026] text-[#FD3706] flex items-center justify-center shrink-0 shadow-xs">
+                <BrainCircuit className="w-5 h-5" />
               </div>
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
@@ -532,36 +530,29 @@ export default function DashboardOverviewPage() {
                     Forecaster · Depletion Runway & Replenishment
                   </h2>
                   <span className="px-2 py-0.5 rounded bg-[#FD3706]/10 text-[#FD3706] font-mono text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">
-                    Active Telemetry
+                    Telemetry Active
                   </span>
                 </div>
                 <span className="font-mono text-xs text-slate-400">
-                  Predicted SKU runway exhaustion and automated purchase order dispatch
+                  Algorithmic inventory velocity depletion modeling & automated purchase order dispatch
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <Link href="/dashboard/forecast">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F3F4F7] hover:bg-slate-200 text-[#222026] font-archivo text-xs font-semibold uppercase tracking-wide transition-colors whitespace-nowrap cursor-pointer"
-                >
-                  <span>Open Forecaster Model</span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </button>
-              </Link>
+            <div className="hidden sm:flex items-center gap-2 bg-[#F3F4F7] text-[#222026] border border-slate-200 px-3 py-1.5 rounded-lg font-mono text-xs whitespace-nowrap shrink-0">
+              <span className="w-2 h-2 rounded-full bg-[#059669] animate-pulse" />
+              <span className="font-bold">Automated Requisition Engine Online</span>
             </div>
           </div>
 
           {/* Forecaster SKU Runway Depletion Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {forecastItems.slice(0, 3).map((item) => {
               const isCritical = item.riskLevel === "CRITICAL";
               return (
                 <div
                   key={item.inventoryId}
-                  className={`p-3.5 rounded-xl border flex flex-col justify-between gap-2.5 transition-all ${
+                  className={`p-4 rounded-xl border flex flex-col justify-between gap-3 transition-all ${
                     isCritical
                       ? "bg-red-50/40 border-red-200"
                       : "bg-[#F3F4F7] border-slate-200"
@@ -589,7 +580,7 @@ export default function DashboardOverviewPage() {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 font-mono text-[11px] pt-1 border-t border-slate-200/60">
+                  <div className="grid grid-cols-3 gap-2 font-mono text-[11px] py-1 border-t border-b border-slate-200/60">
                     <div>
                       <span className="text-slate-400 block text-[10px]">Stock</span>
                       <span className="font-bold text-[#222026]">{item.currentStock}</span>
@@ -608,7 +599,7 @@ export default function DashboardOverviewPage() {
                     type="button"
                     disabled={replenishingId === item.inventoryId}
                     onClick={() => handleOverviewAutoPO(item)}
-                    className="w-full mt-1 h-8 rounded-lg bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer"
+                    className="w-full mt-0.5 h-8.5 rounded-lg bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer shadow-xs"
                   >
                     <Zap className="w-3.5 h-3.5 text-[#FD3706]" />
                     <span>Auto-PO Requisition</span>
@@ -620,73 +611,93 @@ export default function DashboardOverviewPage() {
             {/* Fallback realistic items if no forecast items generated yet */}
             {forecastItems.length === 0 && (
               <>
-                <div className="p-3.5 rounded-xl border border-red-200 bg-red-50/30 flex flex-col justify-between gap-2.5">
+                <div className="p-4 rounded-xl border border-red-200 bg-red-50/40 flex flex-col justify-between gap-3">
                   <div className="flex items-center justify-between">
-                    <div className="flex flex-col">
-                      <span className="font-mono text-xs font-bold text-[#222026]">MSH-7721-JP</span>
-                      <span className="text-[11px] text-slate-500">Brushless High-Torque Motor</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-mono text-xs font-bold text-[#222026] truncate">MSH-7721-JP</span>
+                      <span className="text-[11px] text-slate-500 truncate">Brushless High-Torque Motor</span>
                     </div>
-                    <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase bg-red-100 text-red-700 border border-red-300 whitespace-nowrap">
+                    <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase bg-red-100 text-red-700 border border-red-300 whitespace-nowrap shrink-0">
                       0.8d runway
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 font-mono text-[11px] pt-1 border-t border-slate-200/60">
+                  <div className="grid grid-cols-3 gap-2 font-mono text-[11px] py-1 border-t border-b border-slate-200/60">
                     <div><span className="text-slate-400 block text-[10px]">Stock</span><span className="font-bold text-red-600">12 units</span></div>
                     <div><span className="text-slate-400 block text-[10px]">Burn Rate</span><span className="font-bold text-[#222026]">14/d</span></div>
                     <div><span className="text-slate-400 block text-[10px]">Recommended</span><span className="font-bold text-[#FD3706]">+120</span></div>
                   </div>
-                  <Link href="/dashboard/forecast">
-                    <button type="button" className="w-full mt-1 h-8 rounded-lg bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer">
-                      <Zap className="w-3.5 h-3.5 text-[#FD3706]" />
-                      <span>Review Forecaster Replenishment</span>
-                    </button>
-                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      toast({
+                        title: "Automated Requisition Dispatched",
+                        description: "PO #REQ-7721 generated for Brushless High-Torque Motor (+120 units).",
+                      });
+                    }}
+                    className="w-full mt-0.5 h-8.5 rounded-lg bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer shadow-xs"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-[#FD3706]" />
+                    <span>Auto-PO Requisition</span>
+                  </button>
                 </div>
 
-                <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/30 flex flex-col justify-between gap-2.5">
+                <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/40 flex flex-col justify-between gap-3">
                   <div className="flex items-center justify-between">
-                    <div className="flex flex-col">
-                      <span className="font-mono text-xs font-bold text-[#222026]">MSH-3180-EU</span>
-                      <span className="text-[11px] text-slate-500">Optical Infrared Gate S-40</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-mono text-xs font-bold text-[#222026] truncate">MSH-3180-EU</span>
+                      <span className="text-[11px] text-slate-500 truncate">Optical Infrared Gate S-40</span>
                     </div>
-                    <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase bg-amber-100 text-amber-800 border border-amber-300 whitespace-nowrap">
+                    <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase bg-amber-100 text-amber-800 border border-amber-300 whitespace-nowrap shrink-0">
                       5.1d runway
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 font-mono text-[11px] pt-1 border-t border-slate-200/60">
+                  <div className="grid grid-cols-3 gap-2 font-mono text-[11px] py-1 border-t border-b border-slate-200/60">
                     <div><span className="text-slate-400 block text-[10px]">Stock</span><span className="font-bold text-amber-700">112 units</span></div>
                     <div><span className="text-slate-400 block text-[10px]">Burn Rate</span><span className="font-bold text-[#222026]">22/d</span></div>
                     <div><span className="text-slate-400 block text-[10px]">Recommended</span><span className="font-bold text-[#FD3706]">+250</span></div>
                   </div>
-                  <Link href="/dashboard/forecast">
-                    <button type="button" className="w-full mt-1 h-8 rounded-lg bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer">
-                      <Zap className="w-3.5 h-3.5 text-[#FD3706]" />
-                      <span>Review Forecaster Replenishment</span>
-                    </button>
-                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      toast({
+                        title: "Automated Requisition Dispatched",
+                        description: "PO #REQ-3180 generated for Optical Infrared Gate S-40 (+250 units).",
+                      });
+                    }}
+                    className="w-full mt-0.5 h-8.5 rounded-lg bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer shadow-xs"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-[#FD3706]" />
+                    <span>Auto-PO Requisition</span>
+                  </button>
                 </div>
 
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-[#F3F4F7] flex flex-col justify-between gap-2.5">
+                <div className="p-4 rounded-xl border border-slate-200 bg-[#F3F4F7] flex flex-col justify-between gap-3">
                   <div className="flex items-center justify-between">
-                    <div className="flex flex-col">
-                      <span className="font-mono text-xs font-bold text-[#222026]">MSH-9402-TX</span>
-                      <span className="text-[11px] text-slate-500">V-900 Dual Rotary Actuator</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-mono text-xs font-bold text-[#222026] truncate">MSH-9402-TX</span>
+                      <span className="text-[11px] text-slate-500 truncate">V-900 Dual Rotary Actuator</span>
                     </div>
-                    <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase bg-[#059669]/10 text-[#059669] border border-[#059669]/30 whitespace-nowrap">
+                    <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase bg-[#059669]/10 text-[#059669] border border-[#059669]/30 whitespace-nowrap shrink-0">
                       30.8d runway
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 font-mono text-[11px] pt-1 border-t border-slate-200/60">
+                  <div className="grid grid-cols-3 gap-2 font-mono text-[11px] py-1 border-t border-b border-slate-200/60">
                     <div><span className="text-slate-400 block text-[10px]">Stock</span><span className="font-bold text-[#222026]">1,480</span></div>
                     <div><span className="text-slate-400 block text-[10px]">Burn Rate</span><span className="font-bold text-[#222026]">48/d</span></div>
                     <div><span className="text-slate-400 block text-[10px]">Status</span><span className="font-bold text-[#059669]">Safe Buffer</span></div>
                   </div>
-                  <Link href="/dashboard/forecast">
-                    <button type="button" className="w-full mt-1 h-8 rounded-lg bg-[#222026] hover:bg-[#19171C] text-white font-archivo text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer">
-                      <span>Forecaster Deep Dive</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      toast({
+                        title: "Telemetry Status Optimal",
+                        description: "MSH-9402-TX is operating within optimal 30d safety margins.",
+                      });
+                    }}
+                    className="w-full mt-0.5 h-8.5 rounded-lg bg-[#222026] hover:bg-[#19171C] text-white font-archivo text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer shadow-xs"
+                  >
+                    <span>Telemetry Optimal</span>
+                  </button>
                 </div>
               </>
             )}
@@ -1146,16 +1157,7 @@ export default function DashboardOverviewPage() {
           <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
             Quick Access Management Ledgers
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-            <Link
-              href="/dashboard/forecast"
-              className="p-3 bg-white rounded-xl border border-slate-200 hover:border-[#FD3706] hover:bg-[#FD3706]/5 transition-all flex flex-col items-center text-center group shadow-xs cursor-pointer"
-            >
-              <BrainCircuit className="w-5 h-5 text-[#FD3706] mb-1 group-hover:scale-110 transition-transform" />
-              <span className="font-archivo text-xs font-bold text-[#222026] whitespace-nowrap">Forecaster</span>
-              <span className="text-[10px] font-mono text-[#FD3706] mt-0.5 whitespace-nowrap">ML Engine</span>
-            </Link>
-
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <Link
               href="/dashboard/product"
               className="p-3 bg-white rounded-xl border border-slate-200 hover:border-[#222026] hover:bg-slate-50 transition-all flex flex-col items-center text-center group shadow-xs cursor-pointer"
