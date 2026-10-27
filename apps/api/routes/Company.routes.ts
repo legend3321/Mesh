@@ -4,8 +4,8 @@ import CompanyController from "../controllers/Company.controller";
 
 const companyRouter = express.Router();
 
-companyRouter.get("/getAll", CompanyController.getAllCompanies);
-companyRouter.get("/get/:companyId", CompanyController.getCompany);
+companyRouter.get("/getAll", verifyToken, CompanyController.getAllCompanies);
+companyRouter.get("/get/:companyId", verifyToken, CompanyController.getCompany);
 companyRouter.post("/add", verifyToken, CompanyController.createCompany);
 companyRouter.patch("/edit/:companyId?", verifyToken, CompanyController.updateCompany);
 companyRouter.delete("/delete/:companyId", verifyToken, CompanyController.deleteCompany);

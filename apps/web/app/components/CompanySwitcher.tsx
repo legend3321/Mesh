@@ -129,8 +129,10 @@ export default function CompanySwitcher() {
           }`}
         >
           <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/50">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Select Active Company
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">
+              {isSuperAdmin
+                ? "Select Active Company (Global)"
+                : (companies[0]?.companyGroup?.groupName ? `Group: ${companies[0].companyGroup.groupName}` : "Select Active Company")}
             </p>
           </div>
 
@@ -169,8 +171,8 @@ export default function CompanySwitcher() {
                     <Globe className="w-3.5 h-3.5" />
                   </div>
                   <div className="truncate">
-                    <p className="text-xs font-medium text-slate-800">All Companies</p>
-                    <p className="text-[10px] text-slate-500">Aggregated Tenant View</p>
+                    <p className="text-xs font-medium text-slate-800">{isSuperAdmin ? "All Companies" : "All Group Entities"}</p>
+                    <p className="text-[10px] text-slate-500">{isSuperAdmin ? "Global Aggregated View" : "Group Aggregated View"}</p>
                   </div>
                 </div>
                 {isAllCompanies && <Check className="w-4 h-4 text-blue-600 shrink-0 ml-2" />}

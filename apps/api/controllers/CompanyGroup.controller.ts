@@ -3,7 +3,20 @@ import { prisma } from "../index";
 
 const getAllCompanyGroups = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user?.user || (req as any).user;
+    const isSuperAdmin = user?.userRole === "SUPERADMIN";
+
+    let whereClause: any = {};
+    if (!isSuperAdmin) {
+      if (user?.companyGroupId) {
+        whereClause.companyGroupId = user.companyGroupId;
+      } else {
+        return res.status(200).json([]);
+      }
+    }
+
     const groups = await prisma.companyGroup.findMany({
+      where: whereClause,
       include: {
         companies: {
           select: {
@@ -55,6 +68,15 @@ const getCompanyGroup = async (req: Request, res: Response) => {
     const { companyGroupId } = req.params;
     if (!companyGroupId) {
       return res.status(400).json({ error: "companyGroupId is required" });
+    }
+
+    const user = (req as any).user?.user || (req as any).user;
+    const isSuperAdmin = user?.userRole === "SUPERADMIN";
+
+    if (!isSuperAdmin && user?.companyGroupId !== companyGroupId) {
+      return res.status(403).json({
+        error: "Access Denied: You cannot view company groups outside your organization.",
+      });
     }
 
     const group = await prisma.companyGroup.findUnique({

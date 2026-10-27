@@ -5,8 +5,8 @@ const CustomerRouter = express.Router();
 
 CustomerRouter.post("/add", verifyToken, CustomerController.addCustomer);
 CustomerRouter.patch("/edit", verifyToken, CustomerController.editCustomer);
-CustomerRouter.get("/getAll", CustomerController.getAllCustomers);
-CustomerRouter.get("/get/:CustomerID", CustomerController.getCustomer);
+CustomerRouter.get("/getAll", verifyToken, CustomerController.getAllCustomers);
+CustomerRouter.get("/get/:CustomerID", verifyToken, CustomerController.getCustomer);
 CustomerRouter.delete(
   "/delete/:CustomerID",
   verifyToken,

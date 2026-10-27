@@ -5,8 +5,8 @@ const InventoryRouter = express.Router();
 
 InventoryRouter.post("/add", verifyToken, InventoryController.addInventory);
 InventoryRouter.patch("/edit", verifyToken, InventoryController.editInventory);
-InventoryRouter.get("/getAll", InventoryController.getAllInventorys);
-InventoryRouter.get("/get/:InventoryID", InventoryController.getInventory);
+InventoryRouter.get("/getAll", verifyToken, InventoryController.getAllInventorys);
+InventoryRouter.get("/get/:InventoryID", verifyToken, InventoryController.getInventory);
 InventoryRouter.delete(
   "/delete/:InventoryID",
   verifyToken,

@@ -5,8 +5,8 @@ const TransferRouter = express.Router();
 
 TransferRouter.post("/add", verifyToken, TransferController.addTransfer);
 TransferRouter.patch("/edit", verifyToken, TransferController.editTransfer);
-TransferRouter.get("/getAll", TransferController.getAllTransfers);
-TransferRouter.get("/get/:TransferID", TransferController.getTransfer);
+TransferRouter.get("/getAll", verifyToken, TransferController.getAllTransfers);
+TransferRouter.get("/get/:TransferID", verifyToken, TransferController.getTransfer);
 TransferRouter.delete(
   "/delete/:TransferID",
   verifyToken,

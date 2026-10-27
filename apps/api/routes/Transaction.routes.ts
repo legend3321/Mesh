@@ -13,9 +13,14 @@ TransactionRouter.patch(
   verifyToken,
   TransactionController.editTransaction
 );
-TransactionRouter.get("/getAll", TransactionController.getAllTransactions);
+TransactionRouter.get(
+  "/getAll",
+  verifyToken,
+  TransactionController.getAllTransactions
+);
 TransactionRouter.get(
   "/get/:TransactionID",
+  verifyToken,
   TransactionController.getTransaction
 );
 TransactionRouter.delete(

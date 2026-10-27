@@ -20,6 +20,10 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const currentUserRole = ((session?.user as any)?.userRole || "EMPLOYEE") as string;
+  const isSuperAdmin = currentUserRole === "SUPERADMIN";
+  const userGroupName =
+    (session?.user as any)?.companyGroup?.groupName ||
+    companies[0]?.companyGroup?.groupName;
   const userName = session?.user?.name || "Terminal Operator";
   const userEmail = session?.user?.email || "dispatch@meshlogistics.io";
 
@@ -55,7 +59,9 @@ export default function Header() {
                   <Building className="w-3.5 h-3.5 text-[#FD3706] shrink-0" />
                   <span className="max-w-[120px] sm:max-w-[180px] truncate font-medium">
                     {isAllCompanies
-                      ? "All Companies"
+                      ? isSuperAdmin
+                        ? "All Companies"
+                        : "All Group Entities"
                       : currentCompany
                       ? currentCompany.companyName
                       : "Select Facility"}
@@ -63,15 +69,19 @@ export default function Header() {
                   <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56 bg-white shadow-lg border border-slate-200">
-                <DropdownMenuLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  Switch Active Entity
+              <DropdownMenuContent align="start" className="w-64 bg-white shadow-lg border border-slate-200">
+                <DropdownMenuLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">
+                  {isSuperAdmin
+                    ? "Switch Active Entity (Global)"
+                    : userGroupName
+                    ? `Group · ${userGroupName}`
+                    : "Switch Active Entity"}
                 </DropdownMenuLabel>
                 <DropdownMenuItem
-                  onClick={() => setCurrentCompanyId(null)}
+                  onClick={() => setCurrentCompanyId("all")}
                   className={`text-xs cursor-pointer ${isAllCompanies ? "font-bold text-[#FD3706] bg-slate-50" : "text-slate-700"}`}
                 >
-                  🌐 All Companies (Aggregated)
+                  🌐 {isSuperAdmin ? "All Companies (Aggregated)" : "All Group Entities (Aggregated)"}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {companies.map((c) => (

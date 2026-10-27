@@ -17,7 +17,7 @@ interface CompanyContextType {
   currentCompany: Company | null;
   activeCompanyId: string | null;
   setCurrentCompanyId: (id: string | null) => void;
-  refreshCompanies: () => Promise<void>;
+  refreshCompanies: () => Promise<Company[] | void>;
   loading: boolean;
   isAllCompanies: boolean;
 }
@@ -34,7 +34,27 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const res = await api.get("/company/getAll");
-      const list = res.data || [];
+      let list: Company[] = res.data || [];
+
+      // Guardrail: Non-superadmins only ever retain their own company group's companies
+      const user = session?.user as any;
+      const currentUserRole = user?.userRole || "EMPLOYEE";
+      const isSuperAdmin = currentUserRole === "SUPERADMIN";
+      const userGroupId = user?.companyGroupId;
+      const userCompanyId = user?.companyId;
+
+      if (!isSuperAdmin && (userGroupId || userCompanyId)) {
+        list = list.filter((c: Company) => {
+          if (userGroupId && c.companyGroupId) {
+            return c.companyGroupId === userGroupId;
+          }
+          if (userCompanyId) {
+            return c.companyId === userCompanyId;
+          }
+          return false;
+        });
+      }
+
       setCompanies(list);
       return list;
     } catch (err) {
@@ -43,7 +63,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [session]);
 
   useEffect(() => {
     fetchCompanies().then((list) => {
@@ -51,6 +71,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       const saved = typeof window !== "undefined" ? localStorage.getItem("mesh_active_company_id") : null;
       const userCompanyId = (session?.user as any)?.companyId;
 
+      // Validate saved: it must belong to `list` (which is already scoped to user's company group)
       if (saved && (saved === "all" || list.some((c: Company) => c.companyId === saved))) {
         setActiveCompanyIdState(saved);
       } else if (userCompanyId && list.some((c: Company) => c.companyId === userCompanyId)) {
@@ -59,7 +80,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
           localStorage.setItem("mesh_active_company_id", userCompanyId);
         }
       } else if (list.length > 0) {
-        // Default to first company
+        // Default to first company in user's group
         setActiveCompanyIdState(list[0].companyId);
         if (typeof window !== "undefined") {
           localStorage.setItem("mesh_active_company_id", list[0].companyId);
@@ -69,10 +90,21 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
   }, [fetchCompanies, session]);
 
   const setCurrentCompanyId = (id: string | null) => {
-    setActiveCompanyIdState(id);
+    const user = session?.user as any;
+    const isSuperAdmin = (user?.userRole || "EMPLOYEE") === "SUPERADMIN";
+
+    let targetId = id;
+    if (targetId && targetId !== "all" && !isSuperAdmin) {
+      const allowed = companies.some((c) => c.companyId === targetId);
+      if (!allowed) {
+        targetId = user?.companyId || (companies[0] ? companies[0].companyId : null);
+      }
+    }
+
+    setActiveCompanyIdState(targetId);
     if (typeof window !== "undefined") {
-      if (id) {
-        localStorage.setItem("mesh_active_company_id", id);
+      if (targetId) {
+        localStorage.setItem("mesh_active_company_id", targetId);
       } else {
         localStorage.removeItem("mesh_active_company_id");
       }

@@ -5,8 +5,8 @@ const DeliveryRouter = express.Router();
 
 DeliveryRouter.post("/add", verifyToken, DeliveryController.addDelivery);
 DeliveryRouter.patch("/edit", verifyToken, DeliveryController.editDelivery);
-DeliveryRouter.get("/getAll", DeliveryController.getAllDeliverys);
-DeliveryRouter.get("/get/:DeliveryID", DeliveryController.getDelivery);
+DeliveryRouter.get("/getAll", verifyToken, DeliveryController.getAllDeliverys);
+DeliveryRouter.get("/get/:DeliveryID", verifyToken, DeliveryController.getDelivery);
 DeliveryRouter.delete(
   "/delete/:DeliveryID",
   verifyToken,

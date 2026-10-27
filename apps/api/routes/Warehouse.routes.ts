@@ -5,8 +5,8 @@ const WarehouseRouter = express.Router();
 
 WarehouseRouter.post("/add", verifyToken, WarehouseController.addWarehouse);
 WarehouseRouter.patch("/edit", verifyToken, WarehouseController.editWarehouse);
-WarehouseRouter.get("/getAll", WarehouseController.getAllWarehouses);
-WarehouseRouter.get("/get/:WarehouseID", WarehouseController.getWarehouse);
+WarehouseRouter.get("/getAll", verifyToken, WarehouseController.getAllWarehouses);
+WarehouseRouter.get("/get/:WarehouseID", verifyToken, WarehouseController.getWarehouse);
 WarehouseRouter.delete(
   "/delete/:WarehouseID",
   verifyToken,

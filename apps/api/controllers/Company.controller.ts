@@ -3,7 +3,25 @@ import { prisma } from "../index";
 
 const getAllCompanies = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user?.user || (req as any).user;
+    const isSuperAdmin = user?.userRole === "SUPERADMIN";
+
+    let whereClause: any = {};
+
+    if (!isSuperAdmin) {
+      if (user?.companyGroupId) {
+        whereClause.companyGroupId = user.companyGroupId;
+      } else if (user?.companyId) {
+        whereClause.companyId = user.companyId;
+      } else {
+        return res.status(200).json([]);
+      }
+    } else if (req.query?.companyGroupId) {
+      whereClause.companyGroupId = req.query.companyGroupId as string;
+    }
+
     const companies = await prisma.company.findMany({
+      where: whereClause,
       include: {
         companyGroup: true,
         _count: {
@@ -34,6 +52,9 @@ const getCompany = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "companyId is required" });
     }
 
+    const user = (req as any).user?.user || (req as any).user;
+    const isSuperAdmin = user?.userRole === "SUPERADMIN";
+
     const company = await prisma.company.findUnique({
       where: { companyId },
       include: {
@@ -63,6 +84,20 @@ const getCompany = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Company not found" });
     }
 
+    if (!isSuperAdmin) {
+      const userGroupId = user?.companyGroupId;
+      const userCompanyId = user?.companyId;
+      const isAllowed =
+        (userGroupId && company.companyGroupId === userGroupId) ||
+        (userCompanyId && company.companyId === userCompanyId);
+
+      if (!isAllowed) {
+        return res.status(403).json({
+          error: "Access Denied: You do not have permission to view companies outside your company group.",
+        });
+      }
+    }
+
     return res.status(200).json(company);
   } catch (error: any) {
     console.error("Error fetching company:", error);
@@ -72,6 +107,8 @@ const getCompany = async (req: Request, res: Response) => {
 
 const createCompany = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user?.user || (req as any).user;
+    const isSuperAdmin = user?.userRole === "SUPERADMIN";
     const { companyName, companyCode, companyDomain, logoUrl, description, companyGroupId } = req.body;
 
     if (!companyName) {
@@ -87,6 +124,8 @@ const createCompany = async (req: Request, res: Response) => {
           .replace(/[^A-Z0-9]/g, "")
           .slice(0, 6) + "-" + Math.floor(100 + Math.random() * 900);
 
+    const targetGroupId = isSuperAdmin ? (companyGroupId || null) : (user?.companyGroupId || null);
+
     const newCompany = await prisma.company.create({
       data: {
         companyName,
@@ -94,7 +133,7 @@ const createCompany = async (req: Request, res: Response) => {
         companyDomain: companyDomain || null,
         logoUrl: logoUrl || null,
         description: description || null,
-        companyGroupId: companyGroupId || null,
+        companyGroupId: targetGroupId,
       },
       include: {
         companyGroup: true,
@@ -118,6 +157,25 @@ const updateCompany = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "companyId is required" });
     }
 
+    const user = (req as any).user?.user || (req as any).user;
+    const isSuperAdmin = user?.userRole === "SUPERADMIN";
+
+    if (!isSuperAdmin) {
+      const existing = await prisma.company.findUnique({
+        where: { companyId },
+        select: { companyGroupId: true, companyId: true },
+      });
+      if (!existing) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      const isAllowed =
+        (user?.companyGroupId && existing.companyGroupId === user.companyGroupId) ||
+        (user?.companyId && existing.companyId === user.companyId);
+      if (!isAllowed) {
+        return res.status(403).json({ error: "Access Denied: You cannot modify companies outside your company group." });
+      }
+    }
+
     const { companyName, companyCode, companyDomain, logoUrl, description, companyGroupId } = req.body;
 
     const updated = await prisma.company.update({
@@ -128,7 +186,7 @@ const updateCompany = async (req: Request, res: Response) => {
         ...(companyDomain !== undefined && { companyDomain }),
         ...(logoUrl !== undefined && { logoUrl }),
         ...(description !== undefined && { description }),
-        ...(companyGroupId !== undefined && { companyGroupId: companyGroupId || null }),
+        ...(isSuperAdmin && companyGroupId !== undefined && { companyGroupId: companyGroupId || null }),
       },
       include: {
         companyGroup: true,
@@ -147,6 +205,25 @@ const deleteCompany = async (req: Request, res: Response) => {
     const { companyId } = req.params;
     if (!companyId) {
       return res.status(400).json({ error: "companyId is required" });
+    }
+
+    const user = (req as any).user?.user || (req as any).user;
+    const isSuperAdmin = user?.userRole === "SUPERADMIN";
+
+    if (!isSuperAdmin) {
+      const existing = await prisma.company.findUnique({
+        where: { companyId },
+        select: { companyGroupId: true, companyId: true },
+      });
+      if (!existing) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      const isAllowed =
+        (user?.companyGroupId && existing.companyGroupId === user.companyGroupId) ||
+        (user?.companyId && existing.companyId === user.companyId);
+      if (!isAllowed) {
+        return res.status(403).json({ error: "Access Denied: You cannot delete companies outside your company group." });
+      }
     }
 
     // Unlink users before deleting

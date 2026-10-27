@@ -5,8 +5,8 @@ const ProviderRouter = express.Router();
 
 ProviderRouter.post("/add", verifyToken, ProviderController.addProvider);
 ProviderRouter.patch("/edit", verifyToken, ProviderController.editProvider);
-ProviderRouter.get("/getAll", ProviderController.getAllProviders);
-ProviderRouter.get("/get/:ProviderID", ProviderController.getProvider);
+ProviderRouter.get("/getAll", verifyToken, ProviderController.getAllProviders);
+ProviderRouter.get("/get/:ProviderID", verifyToken, ProviderController.getProvider);
 ProviderRouter.delete(
   "/delete/:ProviderID",
   verifyToken,

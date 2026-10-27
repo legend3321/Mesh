@@ -5,8 +5,8 @@ const PaymentRouter = express.Router();
 
 PaymentRouter.post("/add", verifyToken, PaymentController.addPayment);
 PaymentRouter.patch("/edit", verifyToken, PaymentController.editPayment);
-PaymentRouter.get("/getAll", PaymentController.getAllPayments);
-PaymentRouter.get("/get/:PaymentID", PaymentController.getPayment);
+PaymentRouter.get("/getAll", verifyToken, PaymentController.getAllPayments);
+PaymentRouter.get("/get/:PaymentID", verifyToken, PaymentController.getPayment);
 PaymentRouter.delete(
   "/delete/:PaymentID",
   verifyToken,

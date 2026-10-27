@@ -9,14 +9,18 @@ interface User {
   userName: string;
   userRole: string;
   companyId?: string | null;
+  companyGroupId?: string | null;
   company?: any;
+  companyGroup?: any;
 }
 
 declare module "next-auth" {
   interface User extends DefaultUser {
     user: User;
     companyId?: string | null;
+    companyGroupId?: string | null;
     company?: any;
+    companyGroup?: any;
     authToken?: string;
   }
   interface Session {
@@ -28,7 +32,9 @@ declare module "next-auth" {
       image?: string | null;
       userRole?: string;
       companyId?: string | null;
+      companyGroupId?: string | null;
       company?: any;
+      companyGroup?: any;
     };
     authToken?: string;
   }
@@ -61,8 +67,11 @@ const handler = NextAuth({
               id: response.data.user.userId,
               name: response.data.user.userName,
               email: response.data.user.userEmail,
+              userRole: response.data.user.userRole,
               companyId: response.data.user.companyId,
+              companyGroupId: response.data.user.companyGroupId,
               company: response.data.user.company,
+              companyGroup: response.data.user.companyGroup,
               authToken: response.data.authToken,
             };
           }
