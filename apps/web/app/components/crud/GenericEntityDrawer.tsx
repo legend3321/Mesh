@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Edit2, Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -43,19 +44,24 @@ export default function GenericEntityDrawer<T extends Record<string, any>>({
   onDelete,
 }: GenericEntityDrawerProps<T>) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  if (!item) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  return (
-    <>
+  if (!item || !mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] overflow-hidden">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 transition-opacity"
+        className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
         onClick={onClose}
       />
 
       {/* Slide-out Drawer Panel */}
-      <aside className="fixed inset-y-0 right-0 z-50 w-full sm:w-[460px] md:w-[480px] bg-white shadow-2xl border-l border-slate-200 flex flex-col transform transition-transform duration-300 ease-in-out">
+      <aside className="fixed inset-y-0 right-0 z-10 w-full sm:w-[460px] md:w-[480px] bg-white shadow-2xl border-l border-slate-200 flex flex-col transform transition-transform duration-300 ease-in-out">
         {/* Header */}
         <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -229,6 +235,7 @@ export default function GenericEntityDrawer<T extends Record<string, any>>({
           </Button>
         </div>
       </aside>
-    </>
+    </div>,
+    document.body
   );
 }

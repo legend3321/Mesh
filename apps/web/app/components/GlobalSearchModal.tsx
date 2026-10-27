@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -36,7 +37,12 @@ export default function GlobalSearchModal({
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // 1. Listen for Cmd+K / Ctrl+K keyboard shortcut
   useEffect(() => {
@@ -252,10 +258,10 @@ export default function GlobalSearchModal({
     onOpenChange(false);
   };
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[110] flex items-start justify-center pt-16 sm:pt-24 px-4">
       {/* Dimmed Backdrop */}
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
@@ -402,6 +408,7 @@ export default function GlobalSearchModal({
           </span>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

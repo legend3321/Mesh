@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import type { Product } from "@mesh/types";
 import {
   X,
@@ -32,19 +33,24 @@ export default function ProductDrawer({
   onDelete,
 }: ProductDrawerProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  if (!product) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  return (
-    <>
+  if (!product || !mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] overflow-hidden">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 transition-opacity"
+        className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
         onClick={onClose}
       />
 
       {/* Slide-out Drawer Panel */}
-      <aside className="fixed inset-y-0 right-0 z-50 w-full sm:w-[460px] md:w-[500px] bg-white shadow-2xl border-l border-slate-200 flex flex-col transform transition-transform duration-300 ease-in-out">
+      <aside className="fixed inset-y-0 right-0 z-10 w-full sm:w-[460px] md:w-[500px] bg-white shadow-2xl border-l border-slate-200 flex flex-col transform transition-transform duration-300 ease-in-out">
         {/* Header */}
         <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -276,6 +282,7 @@ export default function ProductDrawer({
           )}
         </div>
       </aside>
-    </>
+    </div>,
+    document.body
   );
 }
