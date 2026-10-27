@@ -7,7 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
-import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -29,7 +28,6 @@ import {
   Loader2,
   Sparkles,
   AlertCircle,
-  CheckCircle2,
   Building,
   Headphones,
   X,
@@ -50,46 +48,42 @@ type FormData = z.infer<typeof FormSchema>;
 
 export const DEMO_ACCOUNTS = [
   {
-    company: "Mesh Global Holdings",
-    companyCode: "SUPER-00",
+    company: "Mesh Holdings",
     role: "SUPERADMIN",
     name: "Ujjwal Chaudhary",
     email: "superadmin@mesh.com",
     password: "admin123",
-    tag: "Platform SuperAdmin (Me)",
+    tag: "SuperAdmin",
   },
   {
     company: "Apex Logistics",
-    companyCode: "APEX-01",
     role: "ADMIN",
     name: "Ujjwal Chaudhary",
     email: "admin@mesh.com",
     password: "admin123",
-    tag: "Apex Corp Admin",
+    tag: "Apex Admin",
   },
   {
     company: "Apex Logistics",
-    companyCode: "APEX-01",
     role: "MANAGER",
     name: "Alex Turner",
     email: "manager@mesh.com",
     password: "admin123",
-    tag: "Apex Operations Lead",
+    tag: "Operations",
   },
   {
     company: "Starlight Retail",
-    companyCode: "STAR-02",
     role: "ADMIN",
     name: "Elena Rostova",
     email: "starlight.admin@mesh.com",
     password: "admin123",
-    tag: "Starlight Global Admin",
+    tag: "Starlight",
   },
 ];
 
 export default function LoginForm() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"credentials" | "demo" | "sso">("credentials");
+  const [activeTab, setActiveTab] = useState<"credentials" | "sso">("credentials");
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [activePersona, setActivePersona] = useState<string | null>("superadmin@mesh.com");
@@ -110,10 +104,9 @@ export default function LoginForm() {
     setAuthError(null);
     form.setValue("userEmail", demo.email);
     form.setValue("userPassword", demo.password);
-    setActiveTab("credentials");
     toast({
       title: "Demo Credentials Loaded",
-      description: `Loaded ${demo.name} (${demo.role}) for ${demo.company}.`,
+      description: `Loaded ${demo.role} for ${demo.company}.`,
     });
   };
 
@@ -163,23 +156,23 @@ export default function LoginForm() {
   return (
     <>
       <Toaster />
-      <div className="bg-white rounded-2xl shadow-xl border border-[#E5E7EB] p-6 sm:p-10 flex flex-col transition-all">
-        {/* Card Header & Tab Switcher from Stitch */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
-          <div className="flex flex-col">
+      <div className="w-full bg-white rounded-2xl shadow-xl border border-[#E5E7EB] p-6 sm:p-8 md:p-10 flex flex-col transition-all">
+        {/* Card Header & 2-Way Tab Switcher from Stitch (No overflow!) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-5 border-b border-slate-100">
+          <div className="flex flex-col min-w-0">
             <span className="font-mono text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
               Checkpoint Terminal 04
             </span>
-            <h1 className="font-archivo text-2xl font-bold uppercase tracking-tight text-[#222026]">
+            <h1 className="font-archivo text-xl sm:text-2xl font-bold uppercase tracking-tight text-[#222026] truncate">
               Identity Authentication
             </h1>
           </div>
 
-          <div className="inline-flex p-1 bg-[#F3F4F7] rounded-xl self-start sm:self-auto shadow-inner">
+          <div className="inline-flex p-1 bg-[#F3F4F7] rounded-xl self-start sm:self-auto shrink-0 shadow-inner">
             <button
               type="button"
               onClick={() => setActiveTab("credentials")}
-              className={`px-3 py-1.5 rounded-lg font-archivo text-xs font-semibold uppercase tracking-wide transition-all ${
+              className={`px-3.5 py-1.5 rounded-lg font-archivo text-xs font-semibold uppercase tracking-wide transition-all ${
                 activeTab === "credentials"
                   ? "bg-[#FD3706] text-white shadow-xs"
                   : "text-slate-500 hover:text-[#222026]"
@@ -189,19 +182,8 @@ export default function LoginForm() {
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab("demo")}
-              className={`px-3 py-1.5 rounded-lg font-archivo text-xs font-semibold uppercase tracking-wide transition-all ${
-                activeTab === "demo"
-                  ? "bg-[#FD3706] text-white shadow-xs"
-                  : "text-slate-500 hover:text-[#222026]"
-              }`}
-            >
-              Demo Personas
-            </button>
-            <button
-              type="button"
               onClick={() => setActiveTab("sso")}
-              className={`px-3 py-1.5 rounded-lg font-archivo text-xs font-semibold uppercase tracking-wide transition-all ${
+              className={`px-3.5 py-1.5 rounded-lg font-archivo text-xs font-semibold uppercase tracking-wide transition-all ${
                 activeTab === "sso"
                   ? "bg-[#FD3706] text-white shadow-xs"
                   : "text-slate-500 hover:text-[#222026]"
@@ -216,7 +198,7 @@ export default function LoginForm() {
         <div className="my-5 p-3 rounded-xl bg-[#F3F4F7] flex items-center justify-between font-mono text-xs text-slate-600">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[#059669] animate-pulse" />
-            <span className="text-[#222026] font-bold uppercase">
+            <span className="text-[#222026] font-bold uppercase tracking-wide">
               Cluster ORD-01 Active
             </span>
           </div>
@@ -225,7 +207,7 @@ export default function LoginForm() {
 
         {/* Auth Error Banner */}
         {authError && (
-          <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+          <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{authError}</span>
           </div>
@@ -235,6 +217,42 @@ export default function LoginForm() {
         {activeTab === "credentials" && (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {/* 1-Click Demo Persona Quick Fill Bar */}
+              <div className="p-3 rounded-xl bg-[#F3F4F7]/80 border border-slate-200/80 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-archivo font-bold uppercase tracking-wider text-[#222026]">
+                    <Sparkles className="w-3.5 h-3.5 text-[#FD3706]" />
+                    <span>Quick Demo Accounts</span>
+                  </div>
+                  <span className="font-mono text-[10px] text-slate-400">1-Click Auto Fill</span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  {DEMO_ACCOUNTS.map((demo) => {
+                    const isSelected = activePersona === demo.email;
+                    return (
+                      <button
+                        key={demo.email}
+                        type="button"
+                        onClick={() => handleSelectDemoAccount(demo)}
+                        className={`px-2 py-1.5 rounded-lg border text-left transition-all cursor-pointer flex flex-col ${
+                          isSelected
+                            ? "bg-white border-[#FD3706] text-[#FD3706] shadow-xs"
+                            : "bg-white/70 border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-white"
+                        }`}
+                      >
+                        <span className="font-archivo text-xs font-bold truncate leading-tight">
+                          {demo.role}
+                        </span>
+                        <span className="font-mono text-[10px] text-slate-400 truncate">
+                          {demo.company}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Email / Dispatch ID */}
               <FormField
                 control={form.control}
@@ -290,7 +308,7 @@ export default function LoginForm() {
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#222026] p-1"
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#222026] p-1 cursor-pointer"
                         >
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
@@ -362,58 +380,7 @@ export default function LoginForm() {
           </Form>
         )}
 
-        {/* TAB 2: Demo Personas (1-Click Instant Fill) */}
-        {activeTab === "demo" && (
-          <div className="space-y-4">
-            <p className="text-xs text-slate-500 font-sans">
-              Select any pre-configured enterprise role to immediately populate authentication tokens and enter the corresponding control plane:
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {DEMO_ACCOUNTS.map((demo) => {
-                const isSelected = activePersona === demo.email;
-                return (
-                  <button
-                    key={demo.email}
-                    type="button"
-                    onClick={() => handleSelectDemoAccount(demo)}
-                    className={`flex flex-col text-left p-3 rounded-xl border transition-all text-xs cursor-pointer ${
-                      isSelected
-                        ? "bg-[#FD3706]/5 border-[#FD3706] shadow-xs"
-                        : "bg-[#F3F4F7] border-transparent hover:border-slate-300 hover:bg-slate-100"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full mb-1">
-                      <span className="font-archivo font-bold text-[#222026] truncate">
-                        {demo.company}
-                      </span>
-                      <span
-                        className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                          demo.role === "SUPERADMIN"
-                            ? "bg-[#222026] text-white"
-                            : "bg-[#FD3706]/15 text-[#FD3706]"
-                        }`}
-                      >
-                        {demo.role}
-                      </span>
-                    </div>
-                    <span className="text-xs text-slate-600 font-medium truncate">{demo.name}</span>
-                    <span className="text-[11px] text-slate-400 font-mono truncate mt-0.5">{demo.email}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <button
-              type="button"
-              onClick={() => setActiveTab("credentials")}
-              className="w-full mt-2 h-10 rounded-xl bg-[#222026] hover:bg-[#19171C] text-white font-archivo text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <span>Proceed to Login with Selected Account</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
-        {/* TAB 3: Enterprise SSO from Stitch */}
+        {/* TAB 2: Enterprise SSO from Stitch */}
         {activeTab === "sso" && (
           <div className="space-y-4">
             <div className="p-4 rounded-xl bg-[#F3F4F7] text-[#222026] space-y-1.5">
@@ -504,7 +471,7 @@ export default function LoginForm() {
               <button
                 type="button"
                 onClick={() => setIsOverrideModalOpen(false)}
-                className="text-slate-400 hover:text-[#222026] p-1"
+                className="text-slate-400 hover:text-[#222026] p-1 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>

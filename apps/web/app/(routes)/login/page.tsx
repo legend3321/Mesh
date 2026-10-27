@@ -30,7 +30,7 @@ export default async function LoginPage() {
       <div className="absolute bottom-8 -left-20 w-80 h-80 rounded-full bg-[#222026]/5 blur-3xl pointer-events-none" />
 
       {/* Top Header Branding */}
-      <div className="relative z-10 w-full max-w-xl mx-auto flex flex-col items-center pt-4 sm:pt-6">
+      <div className="relative z-10 w-full max-w-2xl mx-auto flex flex-col items-center pt-4 sm:pt-6">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-xl bg-[#222026] flex items-center justify-center p-2 shadow-sm shrink-0">
             <MeshLogoSvg size={24} className="text-[#FD3706]" />
@@ -47,12 +47,12 @@ export default async function LoginPage() {
       </div>
 
       {/* Main Authentication Card Container */}
-      <div className="relative z-10 w-full max-w-xl mx-auto my-auto py-4">
+      <div className="relative z-10 w-full max-w-2xl mx-auto my-auto py-4">
         <LoginForm />
       </div>
 
       {/* Streamlined Enterprise Compliance Footer from Stitch */}
-      <footer className="relative z-10 w-full max-w-xl mx-auto pt-4 pb-2 flex flex-col sm:flex-row items-center justify-between gap-2 text-slate-400 font-mono text-[11px]">
+      <footer className="relative z-10 w-full max-w-2xl mx-auto pt-4 pb-2 flex flex-col sm:flex-row items-center justify-between gap-2 text-slate-400 font-mono text-[11px]">
         <div className="flex items-center gap-2">
           <span>SAML 2.0</span>
           <span className="text-slate-300">·</span>
