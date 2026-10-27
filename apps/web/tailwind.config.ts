@@ -18,8 +18,27 @@ const config = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["var(--font-inter)", "sans-serif"],
+        archivo: ["var(--font-archivo)", "sans-serif"],
+        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
+      },
       colors: {
         meshBlue: "#0f172a",
+        brand: {
+          orange: "#FD3706",
+          "orange-hover": "#E02E00",
+          "orange-subtle": "rgba(253, 55, 6, 0.1)",
+          charcoal: "#222026",
+          "charcoal-hover": "#19171C",
+          platinum: "#DBDBDB",
+          canvas: "#F3F4F7",
+        },
+        status: {
+          optimal: "#059669",
+          attention: "#D97706",
+          critical: "#DC2626",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

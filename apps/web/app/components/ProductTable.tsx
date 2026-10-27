@@ -573,8 +573,8 @@ export default function ProductTable({
                     }
                     className={`min-w-7 h-7 px-2 rounded-md text-xs font-semibold transition-colors flex items-center justify-center ${
                       isActive
-                        ? "bg-slate-900 text-white shadow-2xs"
-                        : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                        ? "bg-[#FD3706] text-white shadow-xs font-archivo"
+                        : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 font-archivo"
                     }`}
                   >
                     {pageIdx + 1}

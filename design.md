@@ -1,148 +1,280 @@
-# Mesh Design System & UI Specifications
+# Mesh Design System & UI Specifications (Archivo Modernist Edition)
 
-This document defines the design tokens, layout hierarchy, component standards, and user experience specifications for the **Mesh Supply Chain & Inventory Management Platform**.
-
----
-
-## 1. Visual Identity & Brand Foundations
-
-### 1.1 Brand Philosophy
-Mesh is designed for logistics operators, warehouse managers, and supply chain administrators. The visual language emphasizes **clarity, high information density, structural hierarchy, and rapid scanability**.
-
-- **Personality**: Reliable, industrial-grade, efficient, clean, data-focused.
-- **Design Metaphor**: Structured grid and physical spatial arrangement (warehouses, slots, pallets, movements).
-
-### 1.2 Color Palette
-
-#### Primary & Brand Palette
-| Token | Hex / HSL | Usage |
-|---|---|---|
-| `meshBlue` | `#0f172a` (Slate 900) | Primary brand tone, main sidebar, prominent headers |
-| `primary` | `hsl(222.2, 47.4%, 11.2%)` | Primary action buttons, active states, key emphasis |
-| `primary-foreground`| `hsl(210, 40%, 98%)` | Text on primary elements |
-
-#### Neutral & Background Palette
-| Token | Hex / HSL | Usage |
-|---|---|---|
-| `background` | `hsl(0, 0%, 100%)` / `#f8fafc` | Main workspace background, canvas surfaces |
-| `card` / Surface | `hsl(0, 0%, 100%)` | Content cards, data tables, modal dialogs |
-| `border` | `hsl(214.3, 31.8%, 91.4%)` / `#e2e8f0` | Dividers, table borders, input outlines |
-| `muted` | `hsl(210, 40%, 96.1%)` / `#f1f5f9` | Table header strips, pill backgrounds, disabled states |
-| `foreground` | `hsl(222.2, 84%, 4.9%)` / `#0f172a` | High-contrast body text, headings |
-| `muted-foreground` | `hsl(215.4, 16.3%, 46.9%)` / `#64748b`| Secondary captions, helper hints, timestamps |
-
-#### Operational & Semantic Status Colors
-| State | Light Mode Tint | Foreground | Usage |
-|---|---|---|---|
-| **Success / Completed** | `#ecfdf5` (Emerald 50) | `#059669` (Emerald 600) | Completed deliveries, orders fulfilled, healthy stock |
-| **Warning / Low Stock** | `#fffbeb` (Amber 50) | `#d97706` (Amber 600) | Reorder point reached, pending approval |
-| **Destructive / Error** | `#fef2f2` (Red 50) | `#dc2626` (Red 600) | Out of stock, cancelled orders, destructive actions |
-| **In Transit / Active** | `#eff6ff` (Blue 50) | `#2563eb` (Blue 600) | Inter-warehouse transfers, dispatches in transit |
+> **Design Vision**: High-performance B2B logistics & supply chain intelligence platform inspired by the **Archivo** industrial aesthetic. Characterized by **Electric International Orange (`#FD3706`)**, **Deep Matte Charcoal (`#222026`)**, **Platinum Silver (`#DBDBDB`)**, high-contrast tri-tone KPI hero cards, textured/hatched data visualizations, and an ultra-clean minimalist icon-rail navigation shell.
 
 ---
 
-## 2. Typography
+## 1. Visual Identity & Design Pillars
 
-- **Primary Font Family**: Inter, system-ui, `-apple-system`, `sans-serif`
-- **Monospace Font**: JetBrains Mono, Fira Code, `ui-monospace` (used for Barcodes, SKUs, Tracking IDs, and Hex ObjectIDs)
-
-### Type Scale
-| Role | Size | Weight | Line Height | Tracking |
-|---|---|---|---|---|
-| Display / Brand | `30px` (`text-3xl`) | Bold (`700`) | `36px` | `-0.02em` |
-| Page Title (`H1`) | `24px` (`text-2xl`) | SemiBold (`600`) | `32px` | `-0.015em` |
-| Section Title (`H2`) | `20px` (`text-xl`) | SemiBold (`600`) | `28px` | `-0.01em` |
-| Subheading (`H3`) | `16px` (`text-base`) | Medium (`500`) | `24px` | normal |
-| Body Default | `14px` (`text-sm`) | Regular (`400`) | `20px` | normal |
-| Data Tables / Metadata | `13px` (`text-[13px]`) | Regular / Medium | `18px` | normal |
-| Small / Captions | `12px` (`text-xs`) | Regular / Medium | `16px` | `0.01em` |
+### 1.1 Aesthetic Philosophy: Archivo Industrial Modernism
+- **Bold & Functional**: Crisp geometric grotesque typography paired with high-impact color blocking.
+- **Physical Spatial Metaphor**: Industrial hardware surfaces, tactile pill controls, and diagonal hatched textures echoing logistics containers, shipping crates, and telemetry panels.
+- **Tri-Tone Color Contrasting**: Strategic pairing of deep charcoal (#222026), vivid international orange (#FD3706), and soft platinum (#DBDBDB) to establish instant optical hierarchy across dashboards.
+- **Density with Breathing Room**: High data density in tables and charts balanced by generous outer canvas padding (`p-6` to `p-8`) and soft-edged container corners (`rounded-2xl`).
 
 ---
 
-## 3. Spatial System & Elevation
+## 2. Color System & Design Tokens
 
-### 3.1 Spacing Scale
-Built on the standard 4px / 8px grid:
-- `space-1` = `4px`
-- `space-2` = `8px`
-- `space-3` = `12px`
-- `space-4` = `16px`
-- `space-6` = `24px`
-- `space-8` = `32px`
-
-### 3.2 Border Radii
-- **Input / Button / Badge**: `calc(var(--radius) - 2px)` = `6px` (`rounded-md`)
-- **Card / Dialog / Table Container**: `var(--radius)` = `8px` (`rounded-lg`)
-- **Pill / Status Tag**: `9999px` (`rounded-full`)
-
-### 3.3 Elevation & Shadows
-- **Card / Table Surface**: `shadow-sm` (`0 1px 2px 0 rgb(0 0 0 / 0.05)`)
-- **Dropdown / Popover**: `shadow-md` (`0 4px 6px -1px rgb(0 0 0 / 0.1)`)
-- **Modal Dialog**: `shadow-xl` (`0 20px 25px -5px rgb(0 0 0 / 0.1)`)
-
----
-
-## 4. Layout Architecture
-
-### 4.1 Shell Layout
-The authenticated workspace uses a persistent responsive two-column dashboard layout:
+### 2.1 Core Palette Tokens (Reference Specifications)
 
 ```
-┌─────────────────┬──────────────────────────────────────────────────────────────────┐
-│                 │ Navbar (Breadcrumbs, Facility Switcher, Notifications, User)     │
-│  Sidenav (256px)├──────────────────────────────────────────────────────────────────┤
-│                 │ Page Header (Title, Summary Metrics, Action Buttons)             │
-│  - Logo & Brand │                                                                  │
-│  - Navigation   │ Content Area                                                     │
-│    Items with   │ ┌──────────────────────────────────────────────────────────────┐ │
-│    Lucide icons │ │ Filter Bar (Search, Category, Warehouse, Export)             │ │
-│                 │ ├──────────────────────────────────────────────────────────────┤ │
-│  - User Profile │ │ TanStack Data Table / Cards View                             │ │
-│  - Sign Out     │ └──────────────────────────────────────────────────────────────┘ │
-│                 │ Pagination & Selection Summary Footer                            │
-└─────────────────┴──────────────────────────────────────────────────────────────────┘
+┌─────────────────┬─────────────────┬─────────────────┬─────────────────┐
+│ Electric Orange │  Deep Charcoal  │ Platinum Silver │   Crisp White   │
+│     #FD3706     │     #222026     │     #DBDBDB     │     #FFFFFF     │
+│   RGB 253,55,6  │   RGB 34,32,38  │ RGB 219,219,219 │ RGB 255,255,255 │
+└─────────────────┴─────────────────┴─────────────────┴─────────────────┘
 ```
 
-- **Sidebar (`w-64`)**: Fixed dark theme (`bg-meshBlue`, `#0f172a`), scrollable navigation items with active indicators. Collapsible on mobile viewports.
-- **Main Canvas**: Fluid width (`bg-slate-50`), structured padding (`p-6` to `p-8`), max content width constraint (`max-w-7xl`).
+| Token Name | Hex Code | HSL Equivalent | Tailwind Token | UI Role & Application |
+|:---|:---|:---|:---|:---|
+| **Electric Orange** | `#FD3706` | `hsl(12, 98%, 51%)` | `brand-orange` / `accent` | Hero KPI card, active pill switchers, key primary CTA, critical alert highlights |
+| **Orange Hover** | `#E02E00` | `hsl(12, 100%, 44%)` | `brand-orange-hover` | Interactive button hover and pressed states |
+| **Orange Subtlety**| `#FD37061A`| `hsla(12, 98%, 51%, 0.1)` | `brand-orange-subtle`| Badge fills, table row highlights, soft chart overlays |
+| **Deep Charcoal** | `#222026` | `hsl(260, 9%, 14%)` | `brand-charcoal` | Dark hero KPI card, sidebar background/dock, dark action buttons, high-contrast headings |
+| **Charcoal Hover**| `#19171C` | `hsl(260, 10%, 10%)` | `brand-charcoal-hover`| Hover state for dark buttons and interactive cards |
+| **Platinum Gray** | `#DBDBDB` | `hsl(0, 0%, 86%)` | `brand-platinum` | Third KPI card background, subtle container borders, dividers |
+| **Soft Canvas** | `#F3F4F7` | `hsl(220, 14%, 96%)` | `background` | Global application canvas background |
+| **Surface White** | `#FFFFFF` | `hsl(0, 0%, 100%)` | `card` / `popover` | Clean dashboard cards, data grid containers, modal sheets |
+| **Muted Slate** | `#6B7280` | `hsl(215, 14%, 46%)` | `muted-foreground` | Secondary labels, timestamps, metadata, inactive tab text |
+| **Line Gray** | `#E5E7EB` | `hsl(220, 13%, 91%)` | `border` | Subtle internal card dividers and table borders |
+
+### 2.2 Semantic Status Palette
+Status values follow the clean, borderless colored text standard with square bullet indicator dots (`■`):
+
+| Semantic State | Text Color | Dot Color | Value Mapping |
+|:---|:---|:---|:---|
+| **Optimal / Active** | `#059669` (Emerald 600) | `#059669` | `IN STOCK`, `ACTIVE`, `DELIVERED`, `COMPLETED`, `PAID` |
+| **Attention / Runway** | `#D97706` (Amber 600) | `#D97706` | `LOW STOCK`, `PENDING`, `IN TRANSIT`, `PROCESSING` |
+| **Critical / Deficit** | `#DC2626` (Red 600) | `#DC2626` | `OUT OF STOCK`, `CRITICAL RISK`, `CANCELLED`, `FAILED` |
+| **Neutral / Archived** | `#6B7280` (Gray 500) | `#9CA3AF` | `DRAFT`, `INACTIVE`, `STANDALONE`, `EMPLOYEE` |
 
 ---
 
-## 5. Component Design Standards
+## 3. Typography: Archivo Modernist
 
-### 5.1 Buttons
-- **Primary**: Solid dark slate (`bg-slate-900 text-white hover:bg-slate-800`), used for single primary page actions (e.g., "Add Product", "Create Transfer").
-- **Secondary / Outline**: Bordered with muted text (`border-input bg-background hover:bg-accent`), used for Import/Export, Filter, and secondary workflows.
-- **Destructive**: Soft red or solid red (`bg-destructive text-destructive-foreground`), reserved for deletions or order cancellations.
-- **Icon Buttons**: Uniform `h-8 w-8` or `h-9 w-9` squares with centered Lucide icons.
+### 3.1 Font Family Hierarchy
+- **Primary Typeface**: **`Archivo`** (Google Fonts variable font: `wght@100..900`).
+  - *Weights*: 400 (Regular), 500 (Medium), 600 (SemiBold), 700 (Bold), 900 (Black).
+  - *Fallback Stack*: `Archivo, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`.
+- **Monospace Telemetry**: **`JetBrains Mono`** / `ui-monospace`.
+  - Used for SKU codes, tracking identifiers, currency tickers, and timestamp telemetry.
 
-### 5.2 Data Tables (Core Pattern)
-Data tables are the central interaction surface in Mesh.
-- **Header**: Subtle grey background (`bg-muted/50`), uppercase or title-case medium text with column sorting indicators (`ArrowUpDown`).
-- **Rows**: Alternating or clean bordered rows (`hover:bg-slate-50/80`), `h-12` vertical padding for touch & desktop density balance.
-- **Code Identifiers**: Monospace badges for SKUs, Barcodes, and IDs.
-- **Toolbar**: Live search input (`max-w-sm`), multi-column visibility dropdown, batch selection actions.
-- **Footer**: Selected rows counter (`x of y rows selected`) paired with accessible Previous / Next page controls.
+### 3.2 Typography Scale
 
-### 5.3 Status Pills / Badges
-Compact semantic tags displaying record state:
-- `INITIATED`: Neutral slate pill with subtle border.
-- `PROCESSING` / `IN_TRANSIT`: Blue tint with pulsing dot indicator.
-- `COMPLETED`: Emerald tint with check icon.
-- `CANCELLED`: Red tint with muted cross icon.
-
-### 5.4 Form Controls & Inputs
-- Standard height: `36px` (`h-9`) for compact density or `40px` (`h-10`) for standard dialogs.
-- Clear validation messages using Zod + React Hook Form with red helper text (`text-destructive text-xs`).
-- Distinct focus ring (`ring-2 ring-slate-950 ring-offset-2`).
+| Hierarchy | Tailwind Class | Size / Line Height | Weight | Tracking | Usage |
+|:---|:---|:---|:---|:---|:---|
+| **KPI Metric Display**| `text-3xl font-bold` | `32px / 38px` | `700` | `-0.03em` | Primary numerical KPI values (`$14.085`, `$89 649`) |
+| **Page Heading** | `text-2xl font-bold` | `24px / 30px` | `700` | `-0.02em` | Main dashboard titles, section headers |
+| **Card Header** | `text-base font-semibold` | `16px / 22px` | `600` | `-0.01em` | Widget and chart card titles (`Total Orders`, `Top categories`) |
+| **Body Standard** | `text-sm font-medium` | `14px / 20px` | `500` | `normal` | Navigation labels, table cell content, input text |
+| **Sub-labels / Tags** | `text-xs font-medium` | `12px / 16px` | `500` | `0.01em` | Last month comparators, axis tick labels, helper hints |
+| **Micro Badges** | `text-[11px] font-bold` | `11px / 14px` | `700` | `0.02em` | Percentage badges (`+21%`, `5% OFF`), pill selectors |
 
 ---
 
-## 6. Accessibility & Responsiveness
+## 4. Shell & Layout Architecture
 
-- **Contrast Compliance**: All text and icon elements satisfy WCAG AA ratio (minimum 4.5:1 for normal text).
-- **Keyboard Navigation**: Native tab ordering, focus-visible indicators across all dropdowns, inputs, and table headers.
-- **Breakpoints**:
-  - `Mobile (< 640px)`: Drawer sidebar, stacked filter bars, horizontal table scrolling.
-  - `Tablet (640px - 1024px)`: Compact sidebar, 2-column metric cards.
-  - `Desktop (> 1024px)`: Expanded sidebar, dense multi-column data views.
+### 4.1 Master Workspace Blueprint
+
+```
+┌──────┬────────────────────────────────────────────────────────────────────────┐
+│      │  Top Navbar: [App Icon + Title]   [Tenant / USD ▾] [🔍] [🔔 (2)] [Avatar]│
+│      ├────────────────────────────────────────────────────────────────────────┤
+│      │                                                                        │
+│ DOCK │  ┌─────────────────┬─────────────────┬─────────────────┬─────────────┐  │
+│ RAIL │  │ Card 1: Charcoal│ Card 2: Orange  │ Card 3: Platinum│ Right Card: │  │
+│      │  │ Total Orders    │ Total Customers │ Total Revenue   │ Categories  │  │
+│ [⊞]  │  │ $14.085 (📉10%) │ 1.222 (📈+79%)  │ $89 649 (📈+21%)│ (Donut 🍩)  │  │
+│ [🛍]  │  │ ~~~ sparkline   │ 23% / 77% split │ ▦ heatmap grid  │             │  │
+│ [👥]  │  └─────────────────┴─────────────────┴─────────────────┴─────────────┘  │
+│ [📊]  │                                                                        │
+│ [🚚]  │  ┌───────────────────────────────────────────────┬───────────────────┐  │
+│ [💳]  │  │ Main Chart: Total Orders (Hatched Bar + Solid)│ Sales by country  │  │
+│      │  │ Double-tone volume with June callout card     │ Ranked bars       │  │
+│ ──── │  ├───────────────────────────────────────────────┴───────────────────┤  │
+│ [⚙]  │  │ Table: Product Sales / Inventory Grid                             │  │
+│ [→]  │  │ [Thumbnail] [Item Name] [Stock] [Price] [Sale] [Sold]             │  │
+│      │  └───────────────────────────────────────────────────────────────────┘  │
+└──────┴────────────────────────────────────────────────────────────────────────┘
+```
+
+### 4.2 Layout Specifications
+- **Viewport Canvas**: Max-width fluid container with `bg-[#F3F4F7]` background and `p-6` or `p-8` spacing.
+- **Dock Rail Sidebar**:
+  - Width: `72px` fixed width on desktop.
+  - Floating vertical pill dock (`bg-white` or dark charcoal with `rounded-2xl`, subtle shadow `shadow-xs`, and `border border-slate-200/80`).
+  - Active button state: Charcoal `#222026` or vibrant orange `#FD3706` background with crisp white icon.
+  - Inactive button state: Transparent with text `#6B7280`, transitioning to `#222026` on hover.
+  - Bottom controls: Settings cog and Logout action.
+- **Top Bar**:
+  - Left: Rounded app icon badge (Electric Orange `#FD3706` with white symbol) + Title (`Retail Inventory` / `Mesh Enterprise`).
+  - Right: Currency & Tenant Selector (`USD ▾`), Quick Search trigger (`🔍`), Notification capsule with orange dot bubble indicator, and rounded profile avatar.
+
+---
+
+## 5. Component Specifications
+
+### 5.1 Hero Metric KPI Cards (The Tri-Tone Row)
+The top metric row features three distinctly colored cards followed by the category overview card:
+
+#### Card 1: Deep Charcoal Card (`#222026`)
+- **Background**: Solid `#222026` with `text-white`.
+- **Top Row**: Label `Total Orders` (text-slate-400), right-aligned filter/tune icon.
+- **Middle Metric**: Value `$14.085`, with trend pill `↘ 10%` in soft red/coral.
+- **Sub-label**: `$15.650 last month`.
+- **Interactive Sparkline**:
+  - Recharts curved `AreaChart` with gradient fill (`rgba(255,255,255,0.15)` to `transparent`) and `stroke="#ffffff"`.
+  - Floating point callout with dark border and text `$1210.6`.
+  - Date ticks: `1Feb 8Feb 16Feb 25Feb 30Feb`.
+
+#### Card 2: Electric Orange Card (`#FD3706`)
+- **Background**: Solid `#FD3706` with `text-white`.
+- **Top Row**: Label `Total Customers` (text-white/80), right-aligned filter icon.
+- **Middle Metric**: Value `1.222`, with trend pill `↗ +79%` in white/translucent green.
+- **Sub-label**: `683 users last month`.
+- **Ratio Split Visual**:
+  - Contained dual-color pill or segmented horizontal bar.
+  - Left segment: White background with black text `23%` (Men / Inbound).
+  - Right segment: Deep charcoal background with white text `77%` (Women / Outbound).
+  - Bottom legend with colored indicator dots.
+
+#### Card 3: Platinum Silver Card (`#DBDBDB`)
+- **Background**: Soft platinum `#DBDBDB` (or off-white `#F0F1F4` in dark themes) with dark charcoal text `#222026`.
+- **Top Row**: Label `Total Revenue`, right-aligned filter icon.
+- **Middle Metric**: Value `$89 649`, with trend pill `↗ +21%` in crisp emerald green.
+- **Sub-label**: `$73 925 last month`.
+- **Activity Heatmap Grid**:
+  - 7-column matrix (Mon, Tue, Wed, Thu, Fri, Sat, Sun) mimicking GitHub-style telemetry activity dots.
+  - Highlighted column with dark tooltip badge showing day total `$1210.6`.
+
+---
+
+### 5.2 Category Distribution Card (Donut Chart)
+- **Container**: White rounded card (`rounded-2xl bg-white border border-slate-200/60 p-5 shadow-xs`).
+- **Header**: Title `Top categories` with external link arrow `↗`.
+- **Chart**: Custom segmented Donut chart (`PieChart` in Recharts) with percentage labels inside segments:
+  - 35% Deep Charcoal (`#222026`)
+  - 20% Electric Orange (`#FD3706`)
+  - 23% Textured/Hatched or Silver Gray (`#DBDBDB`)
+  - 12% Light Slate
+  - 10% Soft Charcoal Tint
+- **Legend & Switcher**:
+  - Bullet dot legend: `● T-shirts  ● Hoodies  ● Jeans  ● Jackets`.
+  - Time range segmented pill selector: `[ All time | Weekly | Monthly ]` where active button is solid orange `#FD3706` with white text.
+
+---
+
+### 5.3 Main Telemetry Charts
+
+#### Hatched Dual-Tone Bar Chart (`Total Orders` / `Throughput`)
+- **Dual Metric Representation**:
+  - Solid Charcoal bar representing `Income` / `Inbound PO`.
+  - Diagonal hatched / patterned bar representing `Profit` / `Outbound Fulfillment`.
+  - SVG Pattern Definition:
+    ```html
+    <pattern id="diagonalHatch" patternUnits="userSpaceOnUse" width="4" height="4">
+      <path d="M-1,1 l2,-2 M0,4 l4,-4 M3,5 l2,-2" stroke="#222026" strokeWidth="1" />
+    </pattern>
+    ```
+- **Highlighted Month Callout (June Feature Card)**:
+  - Selected bar receives an elevated white border card with ratio fill (75% white / 25% orange).
+  - Floating dark tooltip pill: `Jun, 09 • Sold 30 • Return 15`.
+
+#### Sales by Country / Depot Capacity Chart
+- Vertical ranked bar chart with percentage labels atop each bar (`25% USA`, `22% Japan`, `20% UK`, `18% Korea`, `15% Spain`).
+- Interactive time switcher (`All time`, `Weekly`, `Monthly`).
+- Dark primary CTA button at bottom:
+  - `[ ↑ Export statistics ]` in `#222026` with `rounded-xl`, white text, and download/share icon.
+
+---
+
+### 5.4 Data Grid & Product Table Component
+
+#### Table Header & Row Styling
+- **Card Wrapper**: White background, `rounded-2xl`, subtle border `border-slate-200/80`, shadow `shadow-xs`.
+- **Header Row**: Minimalist text labels (`Item`, `Stock`, `Old price`, `Sale`, `New price`, `Items sold`), `text-xs font-semibold text-slate-500 uppercase tracking-wider`.
+- **Product Row**:
+  - **Item Column**: Square rounded thumbnail image (`w-10 h-10 rounded-lg bg-slate-100 object-cover`) + Product title in bold charcoal `#222026`.
+  - **Stock Column**: Clean bold numeric value (e.g. `118`, `328`).
+  - **Old Price**: Subtle strikethrough or muted text (e.g. `$114.00`).
+  - **Discount / Sale**: Crisp green bold text with bullet dot (e.g. `5%`, `15%`).
+  - **New Price**: High-contrast bold numeric display (e.g. `$108.30`).
+  - **Items Sold**: Monospace telemetry count (e.g. `294`).
+- **Interactive States**: Smooth row hover (`hover:bg-slate-50/70`), no jarring background badge pills.
+
+---
+
+### 5.5 Form Controls, Buttons & Switchers
+
+#### 1. Primary Action Buttons
+- **Electric Orange Button**:
+  - Class: `bg-[#FD3706] hover:bg-[#E02E00] text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all`
+  - Usage: Key transactional actions (e.g., `Add Product`, `Auto-PO Procurement`, `Save Changes`).
+- **Deep Charcoal Button**:
+  - Class: `bg-[#222026] hover:bg-[#19171C] text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all`
+  - Usage: Secondary actions, export buttons (e.g., `Export statistics`, `Download Manifest`).
+
+#### 2. Segmented Pill Switchers
+- **Container**: `inline-flex bg-slate-100 p-1 rounded-xl gap-1 border border-slate-200/60`
+- **Inactive Item**: `px-3 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 rounded-lg transition-colors`
+- **Active Item**: `px-3 py-1 text-xs font-bold bg-[#FD3706] text-white rounded-lg shadow-2xs`
+
+#### 3. Search & Text Inputs
+- **Class**: `h-9 px-3.5 bg-white border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 rounded-xl focus:border-[#FD3706] focus:ring-2 focus:ring-[#FD3706]/20 transition-all`
+
+---
+
+## 6. Technical Implementation Blueprint
+
+### 6.1 Font Configuration (`apps/web/app/layout.tsx`)
+```tsx
+import { Archivo } from "next/font/google";
+
+const archivo = Archivo({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-archivo",
+  display: "swap",
+});
+```
+
+### 6.2 Tailwind Configuration (`apps/web/tailwind.config.ts`)
+```ts
+module.exports = {
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ["var(--font-archivo)", "sans-serif"],
+      },
+      colors: {
+        brand: {
+          orange: "#FD3706",
+          "orange-hover": "#E02E00",
+          charcoal: "#222026",
+          "charcoal-hover": "#19171C",
+          platinum: "#DBDBDB",
+          canvas: "#F3F4F7",
+        },
+      },
+      borderRadius: {
+        "2xl": "16px",
+        "3xl": "24px",
+      },
+    },
+  },
+};
+```
+
+### 6.3 Phased Migration Plan
+1. **Phase 1: Foundation Setup**:
+   - Add Google Font `Archivo` to Next.js font loader in root layout.
+   - Update Tailwind configuration with `#FD3706`, `#222026`, and `#DBDBDB` tokens.
+2. **Phase 2: Shell & Sidebar Overhaul**:
+   - Refactor `Sidenav.tsx` into the ultra-modern dock-rail format with rounded icon-pills.
+   - Update `Header.tsx` to match the floating top bar with orange branding.
+3. **Phase 3: Dashboard & KPI Overhaul**:
+   - Implement the tri-tone KPI hero cards (Charcoal `#222026`, Electric Orange `#FD3706`, Platinum `#DBDBDB`).
+   - Restyle Recharts graphs with custom hatched textures and donut breakdown.
+4. **Phase 4: Table & Data Grid Polish**:
+   - Integrate thumbnail previews, clean typography, and modern pagination controls across `ProductTable.tsx` and `GenericEntityTable.tsx`.

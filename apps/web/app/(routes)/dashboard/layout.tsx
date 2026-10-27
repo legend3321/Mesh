@@ -6,14 +6,18 @@ import { useEffect } from "react";
 import { SidebarProvider } from "@/app/components/SidebarContext";
 import { CompanyProvider } from "@/app/components/CompanyContext";
 import Sidenav from "@/app/components/Sidenav";
+import Header from "@/app/components/Header";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen bg-[#F3F4F7] flex text-[#222026]">
       <Sidenav />
-      <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto bg-white flex flex-col transition-all duration-300">
-        {children}
-      </main>
+      <div className="flex-1 min-w-0 flex flex-col bg-[#F3F4F7] overflow-x-hidden">
+        <Header />
+        <main className="flex-1 min-w-0 p-4 sm:p-6 overflow-y-auto">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
