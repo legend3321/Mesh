@@ -74,6 +74,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       if (typeof window !== "undefined") {
         localStorage.removeItem("mesh_active_company_id");
       }
+      fetchCompanies();
       return;
     }
 
@@ -109,6 +110,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       if (typeof window !== "undefined") {
         localStorage.removeItem("mesh_active_company_id");
       }
+      fetchCompanies();
       return;
     }
 

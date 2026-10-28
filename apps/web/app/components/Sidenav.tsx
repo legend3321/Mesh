@@ -62,8 +62,8 @@ export default function Sidenav() {
           items: [
             { name: "SuperAdmin Hub", path: "/superadmin", icon: Crown, badge: "BACKEND" },
             { name: "Company Groups", path: "/superadmin?tab=groups", icon: Network },
-            { name: "Companies", path: "/superadmin?tab=companies", icon: Building2 },
-            { name: "User Directory", path: "/superadmin?tab=users", icon: ShieldCheck },
+            { name: "Companies", path: "/companies", icon: Building2 },
+            { name: "Users & RBAC", path: "/users", icon: ShieldCheck },
           ],
         },
       ]
@@ -205,6 +205,14 @@ export default function Sidenav() {
                       active = fullPath.startsWith("/dashboard/superadmin") && currentTab === tab;
                     } else if (item.path === "/superadmin") {
                       active = fullPath === "/dashboard/superadmin" && !currentTab;
+                    } else if (item.path === "/companies") {
+                      active =
+                        fullPath.startsWith("/dashboard/companies") ||
+                        (fullPath.startsWith("/dashboard/superadmin") && currentTab === "companies");
+                    } else if (item.path === "/users") {
+                      active =
+                        fullPath.startsWith("/dashboard/users") ||
+                        (fullPath.startsWith("/dashboard/superadmin") && currentTab === "users");
                     } else {
                       active = fullPath.startsWith(targetHref);
                     }

@@ -57,6 +57,20 @@ export default function SuperAdminDashboardPage() {
     tabParam === "companies" || tabParam === "users" ? tabParam : "groups";
   const [activeTab, setActiveTab] = useState<"groups" | "companies" | "users">(initialTab);
 
+  useEffect(() => {
+    const currentTab = searchParams?.get("tab");
+    if (currentTab === "companies" || currentTab === "users" || currentTab === "groups") {
+      setActiveTab(currentTab);
+    } else if (!currentTab) {
+      setActiveTab("groups");
+    }
+  }, [searchParams]);
+
+  const switchTab = (tab: "groups" | "companies" | "users") => {
+    setActiveTab(tab);
+    router.push(tab === "groups" ? "/dashboard/superadmin" : `/dashboard/superadmin?tab=${tab}`);
+  };
+
   // Search & filter
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
@@ -443,7 +457,7 @@ export default function SuperAdminDashboardPage() {
         <div className="flex items-center gap-1.5 p-1 bg-[#F3F4F7] rounded-xl overflow-x-auto">
           <button
             type="button"
-            onClick={() => setActiveTab("groups")}
+            onClick={() => switchTab("groups")}
             className={`px-3.5 py-1.5 rounded-lg font-archivo text-xs font-semibold uppercase tracking-wide flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
               activeTab === "groups"
                 ? "bg-[#FD3706] text-white shadow-xs"
@@ -456,7 +470,7 @@ export default function SuperAdminDashboardPage() {
 
           <button
             type="button"
-            onClick={() => setActiveTab("companies")}
+            onClick={() => switchTab("companies")}
             className={`px-3.5 py-1.5 rounded-lg font-archivo text-xs font-semibold uppercase tracking-wide flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
               activeTab === "companies"
                 ? "bg-[#FD3706] text-white shadow-xs"
@@ -469,7 +483,7 @@ export default function SuperAdminDashboardPage() {
 
           <button
             type="button"
-            onClick={() => setActiveTab("users")}
+            onClick={() => switchTab("users")}
             className={`px-3.5 py-1.5 rounded-lg font-archivo text-xs font-semibold uppercase tracking-wide flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
               activeTab === "users"
                 ? "bg-[#FD3706] text-white shadow-xs"
