@@ -54,8 +54,12 @@ const editPayment = async (req: Request, res: Response) => {
 const getAllPayments = async (req: Request, res: Response) => {
   try {
     const tenantId = getTenantId(req);
+    if (!tenantId) {
+      return res.status(200).json([]);
+    }
+
     const Payments = await prisma.payment.findMany({
-      where: tenantId ? { companyId: tenantId } : {},
+      where: { companyId: tenantId },
       include: {
         Order: true,
         Dilevery: true,

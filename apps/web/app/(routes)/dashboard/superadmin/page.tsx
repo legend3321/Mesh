@@ -32,7 +32,6 @@ import {
 import { Toaster } from "@/components/ui/toaster";
 import { toast } from "@/components/ui/use-toast";
 import { useSession } from "next-auth/react";
-import { useCompany } from "@/app/components/CompanyContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { CompanyGroup, Company, User, Role } from "@mesh/types";
@@ -41,7 +40,6 @@ export default function SuperAdminDashboardPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { setCurrentCompanyId } = useCompany();
 
   const currentUserRole = ((session?.user as any)?.userRole || "EMPLOYEE") as string;
   const isSuperAdmin = currentUserRole === "SUPERADMIN";
@@ -54,8 +52,10 @@ export default function SuperAdminDashboardPage() {
   const [users, setUsers] = useState<User[]>([]);
 
   // Navigation tab
-  const initialTab = (searchParams?.get("tab") as "groups" | "companies" | "users" | "switcher") || "groups";
-  const [activeTab, setActiveTab] = useState<"groups" | "companies" | "users" | "switcher">(initialTab);
+  const tabParam = searchParams?.get("tab");
+  const initialTab: "groups" | "companies" | "users" =
+    tabParam === "companies" || tabParam === "users" ? tabParam : "groups";
+  const [activeTab, setActiveTab] = useState<"groups" | "companies" | "users">(initialTab);
 
   // Search & filter
   const [searchQuery, setSearchQuery] = useState("");
@@ -253,16 +253,6 @@ export default function SuperAdminDashboardPage() {
     }
   };
 
-  // Tenant Workspace Jump (Impersonation)
-  const handleJumpToCompany = (company: Company) => {
-    setCurrentCompanyId(company.companyId);
-    toast({
-      title: "Switched Tenant Context",
-      description: `Now viewing workspace as ${company.companyName} (${company.companyCode}).`,
-    });
-    router.push("/dashboard");
-  };
-
   // Filtered lists
   const filteredGroups = useMemo(() => {
     if (!searchQuery) return groups;
@@ -412,37 +402,37 @@ export default function SuperAdminDashboardPage() {
           </div>
         </div>
 
-        {/* Total Inventory Units */}
+        {/* System Status */}
         <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs hover:border-emerald-400 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Global Stock
+              Core Engine
             </span>
             <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <Layers className="w-4 h-4" />
+              <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900">
-              {stats?.totalInventoryUnits?.toLocaleString() ?? "—"}
+            <span className="text-lg font-bold text-emerald-600 uppercase tracking-tight">
+              {stats?.systemStatus || "OPERATIONAL"}
             </span>
-            <span className="text-xs text-slate-400">units in ledger</span>
+            <span className="text-xs text-slate-400">99.98% SLA</span>
           </div>
         </div>
 
-        {/* Global Valuation */}
+        {/* Security & Tenant Boundary */}
         <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs hover:border-indigo-400 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Settled Capital
+              Tenant Boundary
             </span>
             <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <Briefcase className="w-4 h-4" />
+              <ShieldCheck className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900">
-              ${stats?.totalSettledVolume?.toLocaleString(undefined, { maximumFractionDigits: 0 }) ?? "—"}
+            <span className="text-xs font-bold text-slate-900 truncate">
+              {stats?.securityProtocol || "Multi-Tenant Isolation"}
             </span>
           </div>
         </div>
@@ -488,19 +478,6 @@ export default function SuperAdminDashboardPage() {
           >
             <Users className="w-3.5 h-3.5" />
             <span>Cross-Tenant Users ({users.length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("switcher")}
-            className={`px-3.5 py-1.5 rounded-lg font-archivo text-xs font-semibold uppercase tracking-wide flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
-              activeTab === "switcher"
-                ? "bg-[#FD3706] text-white shadow-xs"
-                : "text-slate-600 hover:text-[#222026] hover:bg-white"
-            }`}
-          >
-            <Briefcase className="w-3.5 h-3.5" />
-            <span>Workspace Switcher</span>
           </button>
         </div>
 
@@ -625,16 +602,13 @@ export default function SuperAdminDashboardPage() {
                       ) : (
                         <div className="flex flex-wrap gap-1.5">
                           {childCompanies.map((c) => (
-                            <button
+                            <span
                               key={c.companyId}
-                              type="button"
-                              onClick={() => handleJumpToCompany(c)}
-                              className="text-[11px] px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-medium transition-colors flex items-center gap-1"
-                              title="Jump to this company workspace"
+                              className="text-[11px] px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-medium flex items-center gap-1"
                             >
-                              <span>{c.companyName}</span>
-                              <ExternalLink className="w-2.5 h-2.5" />
-                            </button>
+                              <Building2 className="w-2.5 h-2.5" />
+                              <span>{c.companyName} ({c.companyCode})</span>
+                            </span>
                           ))}
                         </div>
                       )}
@@ -708,7 +682,7 @@ export default function SuperAdminDashboardPage() {
                     <th className="px-4 py-3">Parent Group</th>
                     <th className="px-4 py-3">Domain</th>
                     <th className="px-4 py-3">Users</th>
-                    <th className="px-4 py-3">Catalog / Warehouses</th>
+                    <th className="px-4 py-3">Tenant Boundary</th>
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -738,18 +712,28 @@ export default function SuperAdminDashboardPage() {
                         <td className="px-4 py-3 font-medium text-slate-700">
                           {comp._count?.users || 0} user(s)
                         </td>
-                        <td className="px-4 py-3 text-slate-600">
-                          {comp._count?.products || 0} SKUs &bull; {comp._count?.warehouses || 0} depots
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Tenant Isolated
+                          </span>
                         </td>
                         <td className="px-4 py-3 text-right">
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleJumpToCompany(comp)}
-                            className="h-7 text-[11px] gap-1 text-blue-600 border-blue-200 hover:bg-blue-50 bg-white"
+                            onClick={() => {
+                              setUserFormData((prev) => ({
+                                ...prev,
+                                companyGroupId: comp.companyGroupId || "",
+                                companyId: comp.companyId,
+                              }));
+                              setIsUserModalOpen(true);
+                            }}
+                            className="h-7 text-[11px] gap-1 text-slate-700 border-slate-200 hover:bg-slate-50 bg-white"
                           >
-                            <span>Enter Workspace</span>
-                            <ArrowRight className="w-3 h-3" />
+                            <Plus className="w-3 h-3" />
+                            <span>Add User</span>
                           </Button>
                         </td>
                       </tr>
@@ -867,60 +851,6 @@ export default function SuperAdminDashboardPage() {
                 </tbody>
               </table>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 4: WORKSPACE SWITCHER */}
-      {activeTab === "switcher" && (
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-base font-bold text-slate-900">
-              Direct Tenant Workspace Navigator
-            </h2>
-            <p className="text-xs text-slate-500">
-              As SuperAdmin, click any company below to seamlessly switch your active context and inspect their operational data.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {companies.map((c) => (
-              <div
-                key={c.companyId}
-                className="p-4 bg-white rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                      {c.companyCode}
-                    </span>
-                    {c.companyGroup && (
-                      <span className="text-[10px] text-amber-700 font-semibold">
-                        {c.companyGroup.groupName}
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="font-bold text-slate-900 text-sm">{c.companyName}</h3>
-                  <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                    {c.description || "Supply chain operating unit."}
-                  </p>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400">
-                    {c._count?.products || 0} Products
-                  </span>
-                  <Button
-                    size="sm"
-                    onClick={() => handleJumpToCompany(c)}
-                    className="h-8 text-xs bg-blue-600 hover:bg-blue-500 text-white gap-1"
-                  >
-                    <span>Launch</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       )}

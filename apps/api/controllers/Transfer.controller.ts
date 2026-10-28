@@ -64,8 +64,12 @@ const editTransfer = async (req: Request, res: Response) => {
 const getAllTransfers = async (req: Request, res: Response) => {
   try {
     const tenantId = getTenantId(req);
+    if (!tenantId) {
+      return res.status(200).json([]);
+    }
+
     const Transfers = await prisma.transfer.findMany({
-      where: tenantId ? { companyId: tenantId } : {},
+      where: { companyId: tenantId },
       include: {
         Product: true,
         OutWarehouse: true,

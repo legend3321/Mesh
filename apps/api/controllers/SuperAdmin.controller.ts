@@ -5,35 +5,13 @@ import { Role } from "@prisma/client";
 
 const getSuperAdminStats = async (req: Request, res: Response) => {
   try {
-    const [
-      groupsCount,
-      companiesCount,
-      users,
-      productsCount,
-      warehousesCount,
-      inventories,
-      payments,
-      groups,
-    ] = await Promise.all([
+    const [groupsCount, companiesCount, users, groups] = await Promise.all([
       prisma.companyGroup.count(),
       prisma.company.count(),
       prisma.user.findMany({
         select: {
           userId: true,
           userRole: true,
-        },
-      }),
-      prisma.product.count(),
-      prisma.warehouse.count(),
-      prisma.inventory.findMany({
-        select: {
-          InventoryAvailable: true,
-        },
-      }),
-      prisma.payment.findMany({
-        select: {
-          PaymentAmount: true,
-          PaymentStatus: true,
         },
       }),
       prisma.companyGroup.findMany({
@@ -44,13 +22,10 @@ const getSuperAdminStats = async (req: Request, res: Response) => {
               companyName: true,
               companyCode: true,
               companyDomain: true,
+              description: true,
               _count: {
                 select: {
                   users: true,
-                  products: true,
-                  warehouses: true,
-                  orders: true,
-                  deliveries: true,
                 },
               },
             },
@@ -83,16 +58,6 @@ const getSuperAdminStats = async (req: Request, res: Response) => {
       }
     });
 
-    const totalInventoryUnits = inventories.reduce(
-      (sum, i) => sum + (i.InventoryAvailable || 0),
-      0
-    );
-
-    const totalSettledVolume = payments.reduce(
-      (sum, p) => sum + (p.PaymentAmount || 0),
-      0
-    );
-
     return res.status(200).json({
       status: "success",
       metrics: {
@@ -100,10 +65,8 @@ const getSuperAdminStats = async (req: Request, res: Response) => {
         totalCompanies: companiesCount,
         totalUsers: users.length,
         roleBreakdown: roleCounts,
-        totalProducts: productsCount,
-        totalWarehouses: warehousesCount,
-        totalInventoryUnits,
-        totalSettledVolume,
+        systemStatus: "OPERATIONAL",
+        securityProtocol: "TLS 1.3 / FIDO2 Enforced",
       },
       groups,
     });

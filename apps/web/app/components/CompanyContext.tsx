@@ -66,6 +66,17 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   useEffect(() => {
+    const user = session?.user as any;
+    const isSuperAdmin = (user?.userRole || "EMPLOYEE") === "SUPERADMIN";
+
+    if (isSuperAdmin) {
+      setActiveCompanyIdState(null);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("mesh_active_company_id");
+      }
+      return;
+    }
+
     fetchCompanies().then((list) => {
       // Check stored preference
       const saved = typeof window !== "undefined" ? localStorage.getItem("mesh_active_company_id") : null;
@@ -93,8 +104,16 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     const user = session?.user as any;
     const isSuperAdmin = (user?.userRole || "EMPLOYEE") === "SUPERADMIN";
 
+    if (isSuperAdmin) {
+      setActiveCompanyIdState(null);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("mesh_active_company_id");
+      }
+      return;
+    }
+
     let targetId = id;
-    if (targetId && targetId !== "all" && !isSuperAdmin) {
+    if (targetId && targetId !== "all") {
       const allowed = companies.some((c) => c.companyId === targetId);
       if (!allowed) {
         targetId = user?.companyId || (companies[0] ? companies[0].companyId : null);

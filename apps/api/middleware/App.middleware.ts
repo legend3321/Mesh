@@ -15,27 +15,12 @@ export const getTenantId = (req: Request, forWrite = false): any => {
   const isSuperAdmin = user?.userRole === "SUPERADMIN";
   const headerTenant = req.headers["x-company-id"] as string;
 
-  // 1. SuperAdmin: can access any company or platform-wide (undefined)
+  // 1. SuperAdmin is for backend-level platform control and does not own or access company operational data
   if (isSuperAdmin) {
-    if (
-      headerTenant &&
-      headerTenant !== "all" &&
-      headerTenant !== "undefined" &&
-      headerTenant !== "null"
-    ) {
-      return headerTenant;
+    if (user?.companyId) {
+      return user.companyId;
     }
-    if (
-      req.query?.companyId &&
-      typeof req.query.companyId === "string" &&
-      req.query.companyId !== "all"
-    ) {
-      return req.query.companyId;
-    }
-    if (forWrite) {
-      return user?.companyId || undefined;
-    }
-    return undefined; // Global platform query across all companies
+    return undefined;
   }
 
   // 2. Non-SuperAdmin: Strictly scoped to user's CompanyGroup or single Company

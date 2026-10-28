@@ -113,9 +113,12 @@ const editProduct = async (req: Request, res: Response) => {
 const getAllProducts = async (req: Request, res: Response) => {
   try {
     const tenantId = getTenantId(req);
-    console.log("Getting products, tenantId:", tenantId);
+    if (!tenantId) {
+      return res.status(200).json([]);
+    }
+
     const products = await prisma.product.findMany({
-      where: tenantId ? { companyId: tenantId } : {},
+      where: { companyId: tenantId },
       include: { company: true },
     });
 

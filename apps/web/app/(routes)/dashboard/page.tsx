@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import api from "@/app/assets/api";
 import Link from "next/link";
 import {
@@ -66,11 +67,12 @@ import type {
 } from "@mesh/types";
 
 export default function DashboardOverviewPage() {
+  const router = useRouter();
   const { data: session } = useSession();
   const { currentCompany, activeCompanyId, isAllCompanies } = useCompany();
   const currentUserRole = ((session?.user as any)?.userRole || "EMPLOYEE") as Role;
   const isSuperAdmin = currentUserRole === "SUPERADMIN";
-  const isAdmin = currentUserRole === "ADMIN" || isSuperAdmin;
+  const isAdmin = currentUserRole === "ADMIN";
 
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
@@ -95,8 +97,12 @@ export default function DashboardOverviewPage() {
   const pageSize = 6;
 
   useEffect(() => {
+    if (isSuperAdmin) {
+      router.replace("/dashboard/superadmin");
+      return;
+    }
     fetchDashboardData();
-  }, [activeCompanyId]);
+  }, [activeCompanyId, isSuperAdmin]);
 
   const fetchDashboardData = async () => {
     try {
@@ -364,6 +370,18 @@ export default function DashboardOverviewPage() {
     });
     return Array.from(set);
   }, [products]);
+
+  if (isSuperAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-6 space-y-3">
+        <Crown className="w-10 h-10 text-amber-500 animate-pulse" />
+        <h2 className="text-lg font-bold text-slate-800">SuperAdmin Platform Access</h2>
+        <p className="text-xs text-slate-500 max-w-md">
+          Redirecting to the multi-tenant SuperAdmin control plane...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>

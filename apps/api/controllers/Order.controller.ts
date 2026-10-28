@@ -45,8 +45,12 @@ const editOrder = async (req: Request, res: Response) => {
 const getAllOrders = async (req: Request, res: Response) => {
   try {
     const tenantId = getTenantId(req);
+    if (!tenantId) {
+      return res.status(200).json([]);
+    }
+
     const Orders = await prisma.order.findMany({
-      where: tenantId ? { companyId: tenantId } : {},
+      where: { companyId: tenantId },
       include: { Provider: true, company: true },
     });
 

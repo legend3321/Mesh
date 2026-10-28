@@ -56,13 +56,20 @@ export default function Header() {
               </span>
             </div>
             <span className="font-mono text-[10px] sm:text-[11px] uppercase tracking-wider text-slate-400 whitespace-nowrap">
-              Operations & Inventory Grid
+              {isSuperAdmin ? "Platform Administration & Control" : "Operations & Inventory Grid"}
             </span>
           </div>
         </div>
 
-        {/* Multi-Tenant Company Selector Capsule */}
-        {companies.length > 0 && (
+        {/* Multi-Tenant Company Selector Capsule / Platform Control Badge */}
+        {isSuperAdmin ? (
+          <div className="pl-3 border-l border-slate-200 shrink-0">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs font-semibold text-amber-800 whitespace-nowrap">
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>Platform Backend Control</span>
+            </span>
+          </div>
+        ) : companies.length > 0 ? (
           <div className="pl-3 border-l border-slate-200 shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -73,9 +80,7 @@ export default function Header() {
                   <Building className="w-3.5 h-3.5 text-[#FD3706] shrink-0" />
                   <span className="max-w-[120px] sm:max-w-[180px] truncate font-medium">
                     {isAllCompanies
-                      ? isSuperAdmin
-                        ? "All Companies"
-                        : "All Group Entities"
+                      ? "All Group Entities"
                       : currentCompany
                       ? currentCompany.companyName
                       : "Select Facility"}
@@ -85,9 +90,7 @@ export default function Header() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-64 bg-white shadow-lg border border-slate-200">
                 <DropdownMenuLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">
-                  {isSuperAdmin
-                    ? "Switch Active Entity (Global)"
-                    : userGroupName
+                  {userGroupName
                     ? `Group · ${userGroupName}`
                     : "Switch Active Entity"}
                 </DropdownMenuLabel>
@@ -95,7 +98,7 @@ export default function Header() {
                   onClick={() => setCurrentCompanyId("all")}
                   className={`text-xs cursor-pointer ${isAllCompanies ? "font-bold text-[#FD3706] bg-slate-50" : "text-slate-700"}`}
                 >
-                  🌐 {isSuperAdmin ? "All Companies (Aggregated)" : "All Group Entities (Aggregated)"}
+                  🌐 All Group Entities (Aggregated)
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {companies.map((c) => (
@@ -114,7 +117,7 @@ export default function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Right Controls: Search Capsule, Currency Pill, User Profile (NO Notification Icon) */}

@@ -8,31 +8,46 @@ const getStockoutForecast = async (req: Request, res: Response) => {
   try {
     const tenantId = getTenantId(req);
 
+    if (!tenantId) {
+      return res.status(200).json({
+        generatedAt: new Date().toISOString(),
+        items: [],
+        summary: {
+          totalItemsEvaluated: 0,
+          criticalRiskCount: 0,
+          moderateRiskCount: 0,
+          healthyCount: 0,
+          recommendedPurchaseOrdersCount: 0,
+          estimatedReplenishmentCost: 0,
+        },
+      });
+    }
+
     const [inventories, products, deliveries, orders, providers] = await Promise.all([
       prisma.inventory.findMany({
-        where: tenantId ? { companyId: tenantId } : {},
+        where: { companyId: tenantId },
         include: {
           Warehouse: true,
           Product: true,
         },
       }),
       prisma.product.findMany({
-        where: tenantId ? { companyId: tenantId } : {},
+        where: { companyId: tenantId },
       }),
       prisma.delivery.findMany({
-        where: tenantId ? { companyId: tenantId } : {},
+        where: { companyId: tenantId },
         include: {
           DeliveryDetail: true,
         },
       }),
       prisma.order.findMany({
-        where: tenantId ? { companyId: tenantId } : {},
+        where: { companyId: tenantId },
         include: {
           Orderdetail: true,
         },
       }),
       prisma.provider.findMany({
-        where: tenantId ? { companyId: tenantId } : {},
+        where: { companyId: tenantId },
       }),
     ]);
 
@@ -56,34 +71,38 @@ const getStockoutForecast = async (req: Request, res: Response) => {
 const executeAutoPurchaseOrders = async (req: Request, res: Response) => {
   try {
     const tenantId = getTenantId(req);
+    if (!tenantId) {
+      return res.status(403).json({ error: "Only company members can execute purchase orders." });
+    }
+
     const { inventoryIds, batch, riskThreshold = 0.6 } = req.body;
 
     // 1. Fetch live tenant dataset to compute accurate ML forecasts
     const [inventories, products, deliveries, orders, providers] = await Promise.all([
       prisma.inventory.findMany({
-        where: tenantId ? { companyId: tenantId } : {},
+        where: { companyId: tenantId },
         include: {
           Warehouse: true,
           Product: true,
         },
       }),
       prisma.product.findMany({
-        where: tenantId ? { companyId: tenantId } : {},
+        where: { companyId: tenantId },
       }),
       prisma.delivery.findMany({
-        where: tenantId ? { companyId: tenantId } : {},
+        where: { companyId: tenantId },
         include: {
           DeliveryDetail: true,
         },
       }),
       prisma.order.findMany({
-        where: tenantId ? { companyId: tenantId } : {},
+        where: { companyId: tenantId },
         include: {
           Orderdetail: true,
         },
       }),
       prisma.provider.findMany({
-        where: tenantId ? { companyId: tenantId } : {},
+        where: { companyId: tenantId },
       }),
     ]);
 

@@ -48,8 +48,12 @@ const editLocation = async (req: Request, res: Response) => {
 const getAllLocations = async (req: Request, res: Response) => {
   try {
     const tenantId = getTenantId(req);
+    if (!tenantId) {
+      return res.status(200).json([]);
+    }
+
     const Locations = await prisma.location.findMany({
-      where: tenantId ? { companyId: tenantId } : {},
+      where: { companyId: tenantId },
       include: { company: true },
     });
 

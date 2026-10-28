@@ -27,7 +27,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import MeshLogoSvg from "@/app/components/MeshLogoSvg";
 import { useSidebar } from "@/app/components/SidebarContext";
@@ -48,66 +48,70 @@ export default function Sidenav() {
   const { data: session } = useSession();
   const { collapsed, toggleSidebar, mobileOpen, setMobileOpen } = useSidebar();
   const fullPath = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams?.get("tab");
 
   const currentUserRole = ((session?.user as any)?.userRole || "EMPLOYEE") as string;
   const isSuperAdmin = currentUserRole === "SUPERADMIN";
-  const isAdmin = currentUserRole === "ADMIN" || isSuperAdmin;
+  const isAdmin = currentUserRole === "ADMIN";
 
-  const sections: NavSection[] = [
-    {
-      title: "Operations",
-      items: [
-        { name: "Overview", path: "", icon: LayoutDashboard },
-        { name: "Orders", path: "/order", icon: ListCheck },
-        { name: "Transfers", path: "/transfer", icon: ArrowLeftRight },
-      ],
-    },
-    {
-      title: "Assets & Inventory",
-      items: [
-        { name: "Products", path: "/product", icon: Barcode },
-        { name: "Inventory", path: "/inventory", icon: Layers },
-        { name: "Warehouses", path: "/warehouse", icon: Warehouse },
-        { name: "Locations", path: "/location", icon: Map },
-      ],
-    },
-    {
-      title: "Logistics & Supply",
-      items: [
-        { name: "Deliveries", path: "/delivery", icon: Truck },
-        { name: "Providers", path: "/provider", icon: BookUser },
-        { name: "Customers", path: "/customer", icon: Users },
-      ],
-    },
-    {
-      title: "Finance & Audit",
-      items: [
-        { name: "Payments", path: "/payment", icon: Coins },
-        { name: "Transactions", path: "/transaction", icon: Captions },
-      ],
-    },
-    ...(isAdmin || isSuperAdmin
-      ? [
-          {
-            title: isSuperAdmin ? "SuperAdmin Control Plane" : "Governance",
-            items: [
-              ...(isSuperAdmin
-                ? [
-                    { name: "SuperAdmin Hub", path: "/superadmin", icon: Crown, badge: "PRO" },
-                    { name: "Company Groups", path: "/superadmin?tab=groups", icon: Network },
-                  ]
-                : []),
-              ...(isAdmin
-                ? [
-                    { name: "Companies", path: "/companies", icon: Building2 },
-                    { name: "Users & RBAC", path: "/users", icon: ShieldCheck },
-                  ]
-                : []),
-            ],
-          },
-        ]
-      : []),
-  ];
+  const sections: NavSection[] = isSuperAdmin
+    ? [
+        {
+          title: "Platform Administration",
+          items: [
+            { name: "SuperAdmin Hub", path: "/superadmin", icon: Crown, badge: "BACKEND" },
+            { name: "Company Groups", path: "/superadmin?tab=groups", icon: Network },
+            { name: "Companies", path: "/superadmin?tab=companies", icon: Building2 },
+            { name: "User Directory", path: "/superadmin?tab=users", icon: ShieldCheck },
+          ],
+        },
+      ]
+    : [
+        {
+          title: "Operations",
+          items: [
+            { name: "Overview", path: "", icon: LayoutDashboard },
+            { name: "Orders", path: "/order", icon: ListCheck },
+            { name: "Transfers", path: "/transfer", icon: ArrowLeftRight },
+          ],
+        },
+        {
+          title: "Assets & Inventory",
+          items: [
+            { name: "Products", path: "/product", icon: Barcode },
+            { name: "Inventory", path: "/inventory", icon: Layers },
+            { name: "Warehouses", path: "/warehouse", icon: Warehouse },
+            { name: "Locations", path: "/location", icon: Map },
+          ],
+        },
+        {
+          title: "Logistics & Supply",
+          items: [
+            { name: "Deliveries", path: "/delivery", icon: Truck },
+            { name: "Providers", path: "/provider", icon: BookUser },
+            { name: "Customers", path: "/customer", icon: Users },
+          ],
+        },
+        {
+          title: "Finance & Audit",
+          items: [
+            { name: "Payments", path: "/payment", icon: Coins },
+            { name: "Transactions", path: "/transaction", icon: Captions },
+          ],
+        },
+        ...(isAdmin
+          ? [
+              {
+                title: "Governance",
+                items: [
+                  { name: "Companies", path: "/companies", icon: Building2 },
+                  { name: "Users & RBAC", path: "/users", icon: ShieldCheck },
+                ],
+              },
+            ]
+          : []),
+      ];
 
   const renderNavContent = (isDrawer = false) => {
     const isCollapsed = isDrawer ? false : collapsed;
@@ -119,7 +123,7 @@ export default function Sidenav() {
           {isCollapsed ? (
             <div className="flex flex-col items-center gap-2 mb-4 pt-1">
               <Link
-                href="/dashboard"
+                href={isSuperAdmin ? "/dashboard/superadmin" : "/dashboard"}
                 className="flex items-center justify-center group"
                 title="Mesh Supply Chain"
               >
@@ -139,7 +143,7 @@ export default function Sidenav() {
           ) : (
             <div className="flex items-center justify-between mb-4 pt-1 px-1">
               <Link
-                href="/dashboard"
+                href={isSuperAdmin ? "/dashboard/superadmin" : "/dashboard"}
                 onClick={() => isDrawer && setMobileOpen(false)}
                 className="flex items-center gap-3 group min-w-0"
                 title="Mesh Supply Chain"
@@ -152,7 +156,7 @@ export default function Sidenav() {
                     Mesh
                   </span>
                   <span className="font-mono text-[9px] uppercase tracking-widest text-slate-400">
-                    SCM Telemetry
+                    {isSuperAdmin ? "Platform Admin" : "SCM Telemetry"}
                   </span>
                 </div>
               </Link>
@@ -193,10 +197,17 @@ export default function Sidenav() {
                 <ul className="space-y-0.5">
                   {section.items.map((item, iIndex) => {
                     const targetHref = "/dashboard" + item.path;
-                    const active =
-                      item.path === ""
-                        ? fullPath === "/dashboard" || fullPath === "/dashboard/"
-                        : fullPath.startsWith(targetHref);
+                    let active = false;
+                    if (item.path === "") {
+                      active = fullPath === "/dashboard" || fullPath === "/dashboard/";
+                    } else if (item.path.includes("tab=")) {
+                      const tab = item.path.split("tab=")[1];
+                      active = fullPath.startsWith("/dashboard/superadmin") && currentTab === tab;
+                    } else if (item.path === "/superadmin") {
+                      active = fullPath === "/dashboard/superadmin" && !currentTab;
+                    } else {
+                      active = fullPath.startsWith(targetHref);
+                    }
                     const Icon = item.icon;
 
                     return (

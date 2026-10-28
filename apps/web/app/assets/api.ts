@@ -19,9 +19,10 @@ api.interceptors.request.use(async (config) => {
         config.headers.Authorization = `Bearer ${session.authToken}`;
       }
 
-      const activeCompanyId =
-        localStorage.getItem("mesh_active_company_id") ||
-        session?.user?.companyId;
+      const isSuperAdmin = session?.user?.userRole === "SUPERADMIN";
+      const activeCompanyId = isSuperAdmin
+        ? null
+        : localStorage.getItem("mesh_active_company_id") || session?.user?.companyId;
 
       if (activeCompanyId && activeCompanyId !== "all") {
         config.headers["x-company-id"] = activeCompanyId;

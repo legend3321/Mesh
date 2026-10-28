@@ -3,18 +3,25 @@
 import React, { useEffect, useState } from "react";
 import api from "@/app/assets/api";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw, Layers, AlertCircle, Warehouse as WarehouseIcon, Package, BrainCircuit } from "lucide-react";
+import { Plus, RefreshCw, Layers, AlertCircle, Warehouse as WarehouseIcon, Package, BrainCircuit, ShieldAlert } from "lucide-react";
 import GenericEntityTable, { ColumnConfig } from "@/app/components/crud/GenericEntityTable";
 import GenericEntityDrawer, { DrawerField } from "@/app/components/crud/GenericEntityDrawer";
 import GenericEntityModal, { ModalFormField } from "@/app/components/crud/GenericEntityModal";
 import { Toaster } from "@/components/ui/toaster";
 import { toast } from "@/components/ui/use-toast";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useCompany } from "@/app/components/CompanyContext";
 import type { Inventory, Product, Warehouse } from "@mesh/types";
 
 export default function InventoryPage() {
+  const { data: session } = useSession();
   const { activeCompanyId } = useCompany();
+  const currentUserRole = ((session?.user as any)?.userRole || "EMPLOYEE") as string;
+  const isSuperAdmin = currentUserRole === "SUPERADMIN";
+  const userCompanyId = (session?.user as any)?.companyId;
+  const isCompanyMember = !!userCompanyId;
+
   const [inventories, setInventories] = useState<Inventory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -284,6 +291,28 @@ export default function InventoryPage() {
       defaultValue: 40,
     },
   ];
+
+  if (isSuperAdmin && !isCompanyMember) {
+    return (
+      <div className="max-w-2xl mx-auto my-16 bg-white border border-slate-200 rounded-2xl p-8 text-center shadow-xs">
+        <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mx-auto mb-4 text-amber-600">
+          <ShieldAlert className="w-6 h-6" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900 font-archivo uppercase tracking-tight mb-2">
+          Company Member Access Only
+        </h2>
+        <p className="text-sm text-slate-500 mb-6">
+          SuperAdmin is restricted to platform-level administrative controls. Real-time inventory ledgers, SKU buffers, and warehouse allocations can only be viewed and managed by authenticated company tenant members.
+        </p>
+        <Link
+          href="/dashboard/superadmin"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-[#222026] hover:bg-[#19171C] text-white rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors"
+        >
+          Return to SuperAdmin Control Plane
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

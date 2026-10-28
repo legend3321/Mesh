@@ -45,8 +45,12 @@ const editDelivery = async (req: Request, res: Response) => {
 const getAllDeliverys = async (req: Request, res: Response) => {
   try {
     const tenantId = getTenantId(req);
+    if (!tenantId) {
+      return res.status(200).json([]);
+    }
+
     const Deliverys = await prisma.delivery.findMany({
-      where: tenantId ? { companyId: tenantId } : {},
+      where: { companyId: tenantId },
       include: { Customer: true, company: true },
     });
 

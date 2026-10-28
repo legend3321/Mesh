@@ -47,8 +47,12 @@ const editTransaction = async (req: Request, res: Response) => {
 const getAllTransactions = async (req: Request, res: Response) => {
   try {
     const tenantId = getTenantId(req);
+    if (!tenantId) {
+      return res.status(200).json([]);
+    }
+
     const Transactions = await prisma.transaction.findMany({
-      where: tenantId ? { companyId: tenantId } : {},
+      where: { companyId: tenantId },
       include: {
         TransactionOwner: true,
         company: true,

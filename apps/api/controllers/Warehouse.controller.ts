@@ -41,8 +41,12 @@ const editWarehouse = async (req: Request, res: Response) => {
 const getAllWarehouses = async (req: Request, res: Response) => {
   try {
     const tenantId = getTenantId(req);
+    if (!tenantId) {
+      return res.status(200).json([]);
+    }
+
     const Warehouses = await prisma.warehouse.findMany({
-      where: tenantId ? { companyId: tenantId } : {},
+      where: { companyId: tenantId },
       include: { Location: true, company: true },
     });
 
