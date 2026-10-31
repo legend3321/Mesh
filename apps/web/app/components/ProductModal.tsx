@@ -398,12 +398,12 @@ export default function ProductModal({
         </form>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/60 flex items-center justify-end gap-3">
-          <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+        <div className="p-4 border-t border-zinc-100 bg-zinc-50/60 flex items-center justify-end gap-3">
+          <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="border-zinc-200 text-zinc-700 hover:bg-zinc-100 text-xs font-medium h-9 rounded-lg">
             Cancel
           </Button>
-          <Button form="product-form" type="submit" disabled={loading} className="bg-slate-900 text-white hover:bg-slate-800">
-            <Save className="w-4 h-4 mr-1.5" />
+          <Button form="product-form" type="submit" disabled={loading} className="bg-[#FD3706] hover:bg-[#E02E00] text-white text-xs font-medium h-9 px-3.5 rounded-lg shadow-2xs transition-colors cursor-pointer inline-flex items-center gap-1.5">
+            <Save className="w-3.5 h-3.5 text-white" />
             {loading ? "Saving..." : mode === "create" ? "Create Product" : "Save Changes"}
           </Button>
         </div>

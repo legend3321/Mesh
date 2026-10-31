@@ -110,21 +110,21 @@ export default function ProductDrawer({
         role="dialog"
         aria-modal="true"
         aria-labelledby="product-drawer-title"
-        className="fixed inset-y-0 right-0 z-10 w-full sm:w-[460px] md:w-[500px] bg-white shadow-2xl border-l border-slate-200 flex flex-col transform transition-transform duration-300 ease-in-out"
+        className="fixed inset-y-0 right-0 z-10 w-full sm:w-[460px] md:w-[500px] bg-white shadow-2xl border-l border-zinc-200/80 flex flex-col transform transition-transform duration-300 ease-in-out"
       >
         {/* Header */}
-        <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-start justify-between">
+        <div className="p-5 border-b border-zinc-200/80 bg-zinc-50/50 flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
-              <Package className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-lg bg-zinc-100 border border-zinc-200 text-zinc-700 flex items-center justify-center font-bold">
+              <Package className="w-4 h-4 text-zinc-600" />
             </div>
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+              <span className="text-[11px] font-mono font-medium text-zinc-600 bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded-md">
                 {product.ProductCategory || "General"}
               </span>
               <h2
                 id="product-drawer-title"
-                className="text-xl font-bold text-slate-900 mt-1 leading-snug"
+                className="text-base font-semibold text-zinc-900 mt-1 leading-snug"
               >
                 {product.ProductName}
               </h2>
@@ -136,11 +136,11 @@ export default function ProductDrawer({
               e.stopPropagation();
               onClose();
             }}
-            className="text-slate-400 hover:text-slate-700 p-1.5 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
+            className="text-zinc-400 hover:text-zinc-700 p-1.5 rounded-md hover:bg-zinc-100 transition-colors cursor-pointer"
             title="Close panel"
             aria-label="Close panel"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -299,18 +299,18 @@ export default function ProductDrawer({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex flex-col gap-2">
+        <div className="p-4 border-t border-zinc-200/80 bg-zinc-50/50 flex flex-col gap-2">
           {confirmDelete && onDelete ? (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg space-y-2">
-              <div className="flex items-center gap-2 text-red-800 text-xs font-semibold">
-                <AlertTriangle className="w-4 h-4 text-red-600" />
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg space-y-2">
+              <div className="flex items-center gap-2 text-rose-800 text-xs font-medium">
+                <AlertTriangle className="w-4 h-4 text-rose-600" />
                 Are you sure you want to delete this product?
               </div>
               <div className="flex gap-2">
                 <Button
                   variant="destructive"
                   size="sm"
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  className="flex-1 bg-rose-600 hover:bg-rose-700 text-white text-xs h-8"
                   onClick={() => onDelete(product)}
                 >
                   Confirm Delete
@@ -318,7 +318,7 @@ export default function ProductDrawer({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1"
+                  className="flex-1 border-zinc-200 text-zinc-700 hover:bg-zinc-100 text-xs h-8"
                   onClick={() => setConfirmDelete(false)}
                 >
                   Cancel
@@ -326,24 +326,24 @@ export default function ProductDrawer({
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               {onEdit && (
                 <Button
                   variant="outline"
-                  className="flex-1 border-slate-300 hover:bg-slate-100 text-slate-800"
+                  className="flex-1 border-zinc-200 hover:bg-zinc-100 text-zinc-800 text-xs h-9 rounded-lg"
                   onClick={() => onEdit(product)}
                 >
-                  <Edit2 className="w-4 h-4 mr-2" />
+                  <Edit2 className="w-3.5 h-3.5 mr-1.5 text-zinc-500" />
                   Edit Product
                 </Button>
               )}
               {onDelete && (
                 <Button
                   variant="destructive"
-                  className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                  className="bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 text-xs h-9 rounded-lg"
                   onClick={() => setConfirmDelete(true)}
                 >
-                  <Trash2 className="w-4 h-4 mr-2" />
+                  <Trash2 className="w-3.5 h-3.5 mr-1.5" />
                   Delete
                 </Button>
               )}

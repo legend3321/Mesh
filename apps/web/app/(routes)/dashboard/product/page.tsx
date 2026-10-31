@@ -114,39 +114,39 @@ export default function ProductDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-zinc-200/80">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-zinc-900">
               Product Catalog
             </h1>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-zinc-100 border border-zinc-200 text-zinc-700 font-mono text-xs tabular-nums">
               {products.length} items
             </span>
           </div>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-zinc-500 mt-1">
             Manage SKU definitions, dimensional logistics, pricing, and storage compliance. Click any item to inspect its details.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="outline"
             size="sm"
             onClick={fetchProducts}
             disabled={loading}
-            className="text-xs"
+            className="h-9 px-3 bg-white border-zinc-200 text-zinc-800 hover:bg-zinc-50 rounded-lg text-xs font-medium shadow-2xs transition-colors cursor-pointer"
           >
-            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 text-zinc-500 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
 
           <Button
             size="sm"
             onClick={handleOpenCreateModal}
-            className="bg-slate-900 text-white hover:bg-slate-800 text-xs shadow-xs"
+            className="h-9 px-3.5 bg-[#FD3706] hover:bg-[#E02E00] text-white text-xs font-medium rounded-lg shadow-2xs transition-colors cursor-pointer inline-flex items-center gap-1.5"
           >
-            <Plus className="w-4 h-4 mr-1.5" />
+            <Plus className="w-3.5 h-3.5 text-white shrink-0" />
             Add Product
           </Button>
         </div>
