@@ -244,15 +244,15 @@ export default function Sidenav() {
                         <Link
                           href={targetHref}
                           onClick={() => setMobileOpen(false)}
-                          className={`flex items-center rounded-md text-xs transition-colors duration-150 ${
+                          className={`flex items-center rounded-lg text-xs transition-colors duration-150 ${
                             isCollapsed
                               ? "justify-center h-9 w-9 mx-auto"
                               : "px-2.5 py-2 gap-2.5"
                           } ${
                             active
                               ? isCollapsed
-                                ? "bg-[#232326] text-white border border-white/[0.12]"
-                                : "bg-[#232326] text-white font-medium border-l-2 border-[#FD3706] pl-2"
+                                ? "bg-[#FD3706]/15 text-[#FD3706] border border-[#FD3706]/30 shadow-2xs"
+                                : "bg-[#FD3706]/12 text-white font-medium border border-[#FD3706]/20 shadow-2xs"
                               : "text-[#a1a1a6] hover:text-[#ededed] hover:bg-white/[0.04]"
                           }`}
                           title={isCollapsed ? item.name : undefined}
@@ -269,13 +269,19 @@ export default function Sidenav() {
                               <span className="truncate">
                                 {item.name}
                               </span>
-                              {item.badge && (
+                              {item.badge ? (
                                 <span
-                                  className="text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 bg-white/[0.06] text-[#a1a1a6] border border-white/[0.08]"
+                                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 ${
+                                    active
+                                      ? "bg-[#FD3706]/20 text-[#FD3706] border border-[#FD3706]/30 font-medium"
+                                      : "bg-white/[0.06] text-[#a1a1a6] border border-white/[0.08]"
+                                  }`}
                                 >
                                   {item.badge}
                                 </span>
-                              )}
+                              ) : active ? (
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#FD3706] shrink-0 ml-auto shadow-[0_0_6px_rgba(253,55,6,0.5)]" />
+                              ) : null}
                             </div>
                           )}
                         </Link>
