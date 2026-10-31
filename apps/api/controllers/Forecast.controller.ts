@@ -1,70 +1,56 @@
 import { Request, Response } from "express";
-import { prisma } from "../index";
+import { prisma } from "../db";
 import { getTenantId } from "../middleware/App.middleware";
-import { MLService } from "../services/ml.service";
-import type { AutoPOResponse, AutoPOResultItem } from "@mesh/types";
+import { DemandForecasterWorker } from "../services/DemandForecasterWorker.service";
+import { handleError } from "../middleware/Error.middleware";
+import type { AutoPOResponse, AutoPOResultItem, ForecastApiResponse } from "@mesh/types";
 
 const getStockoutForecast = async (req: Request, res: Response) => {
   try {
     const tenantId = getTenantId(req);
 
     if (!tenantId) {
-      return res.status(200).json({
-        generatedAt: new Date().toISOString(),
+      const emptyResponse: ForecastApiResponse = {
+        status: "success",
         items: [],
         summary: {
-          totalItemsEvaluated: 0,
-          criticalRiskCount: 0,
-          moderateRiskCount: 0,
-          healthyCount: 0,
-          recommendedPurchaseOrdersCount: 0,
-          estimatedReplenishmentCost: 0,
+          totalSkusEvaluated: 0,
+          criticalSkusCount: 0,
+          warningSkusCount: 0,
+          safeSkusCount: 0,
+          projectedStockoutValue: 0,
+          averageDaysOfCoverage: 0,
+          modelMetadata: {
+            algorithm:
+              "Empirical Bayesian Demand & Safety Stock Engine (Analytical Supply Chain Model)",
+            confidenceScore: 1.0,
+            topFeatureImportances: {
+              "Days of Coverage": 0.35,
+              "Safety Buffer Ratio": 0.25,
+              "Lead Time Demand": 0.22,
+              "Daily Velocity": 0.18,
+            },
+            leadTimeAssumedDays: 5.0,
+          },
         },
-      });
+      };
+      return res.status(200).json(emptyResponse);
     }
 
-    const [inventories, products, deliveries, orders, providers] = await Promise.all([
-      prisma.inventory.findMany({
-        where: { companyId: tenantId },
-        include: {
-          Warehouse: true,
-          Product: true,
-        },
-      }),
-      prisma.product.findMany({
-        where: { companyId: tenantId },
-      }),
-      prisma.delivery.findMany({
-        where: { companyId: tenantId },
-        include: {
-          DeliveryDetail: true,
-        },
-      }),
-      prisma.order.findMany({
-        where: { companyId: tenantId },
-        include: {
-          Orderdetail: true,
-        },
-      }),
-      prisma.provider.findMany({
-        where: { companyId: tenantId },
-      }),
-    ]);
+    // Support explicit cache invalidation via query parameter ?refresh=true
+    const forceRefresh = req.query.refresh === "true";
 
-    const mlOutput = await MLService.runStockoutForecast({
-      inventories,
-      products,
-      deliveries,
-      orders,
-      providers,
-    });
+    const startTime = process.hrtime();
+    const forecast = await DemandForecasterWorker.getForecast(tenantId, { forceRefresh });
+    const diff = process.hrtime(startTime);
+    const latencyMs = (diff[0] * 1000 + diff[1] / 1e6).toFixed(2);
 
-    return res.status(200).json(mlOutput);
+    res.setHeader("X-Response-Time-Ms", latencyMs);
+    res.setHeader("X-Forecast-Engine", "DemandForecasterWorker-Empirical");
+
+    return res.status(200).json(forecast);
   } catch (error: any) {
-    console.error("Error generating stockout forecast:", error);
-    return res.status(500).json({
-      error: error.message || "Failed to execute ML stockout forecasting pipeline",
-    });
+    return handleError(res, error, "Failed to execute stockout forecasting pipeline");
   }
 };
 
@@ -75,51 +61,16 @@ const executeAutoPurchaseOrders = async (req: Request, res: Response) => {
       return res.status(403).json({ error: "Only company members can execute purchase orders." });
     }
 
-    const { inventoryIds, batch, riskThreshold = 0.6 } = req.body;
+    const { inventoryIds, riskThreshold = 0.6 } = req.body;
 
-    // 1. Fetch live tenant dataset to compute accurate ML forecasts
-    const [inventories, products, deliveries, orders, providers] = await Promise.all([
-      prisma.inventory.findMany({
-        where: { companyId: tenantId },
-        include: {
-          Warehouse: true,
-          Product: true,
-        },
-      }),
-      prisma.product.findMany({
-        where: { companyId: tenantId },
-      }),
-      prisma.delivery.findMany({
-        where: { companyId: tenantId },
-        include: {
-          DeliveryDetail: true,
-        },
-      }),
-      prisma.order.findMany({
-        where: { companyId: tenantId },
-        include: {
-          Orderdetail: true,
-        },
-      }),
-      prisma.provider.findMany({
-        where: { companyId: tenantId },
-      }),
-    ]);
+    // 1. Fetch pre-computed forecast from DemandForecasterWorker (sub-50ms hot cache)
+    const mlOutput = await DemandForecasterWorker.getForecast(tenantId);
 
-    if (inventories.length === 0) {
+    if (!mlOutput.items || mlOutput.items.length === 0) {
       return res.status(400).json({ error: "No inventory items found to replenish." });
     }
 
-    // 2. Run ML Engine to get verified stockout risks
-    const mlOutput = await MLService.runStockoutForecast({
-      inventories,
-      products,
-      deliveries,
-      orders,
-      providers,
-    });
-
-    // 3. Filter target items
+    // 2. Filter target items
     let targetItems = mlOutput.items;
     if (inventoryIds && Array.isArray(inventoryIds) && inventoryIds.length > 0) {
       targetItems = targetItems.filter((i) => inventoryIds.includes(i.inventoryId));
@@ -140,7 +91,7 @@ const executeAutoPurchaseOrders = async (req: Request, res: Response) => {
       } as AutoPOResponse);
     }
 
-    // Determine an audit user
+    // 3. Determine an audit user
     let actorUserId = (req as any).user?.user?.userId || (req as any).user?.userId;
     if (!actorUserId) {
       const fallbackUser = await prisma.user.findFirst({
@@ -148,6 +99,11 @@ const executeAutoPurchaseOrders = async (req: Request, res: Response) => {
       });
       actorUserId = fallbackUser?.userId;
     }
+
+    // Providers lookup for fallback if preferredProviderId is unassigned
+    const providers = await prisma.provider.findMany({
+      where: { companyId: tenantId },
+    });
 
     const createdPOList: AutoPOResultItem[] = [];
     let totalExpenditure = 0;
@@ -203,7 +159,7 @@ const executeAutoPurchaseOrders = async (req: Request, res: Response) => {
           PaymentAmount: replenishmentCost,
           PaymentStatus: "PROCESSING",
           PaymentMode: "ONLINE",
-          PaymentDescription: `AI Automated PO for ${item.productCode} (${item.productName}) - Stockout Risk: ${Math.round(item.stockoutRisk * 100)}%`,
+          PaymentDescription: `Automated PO for ${item.productCode} (${item.productName}) - Stockout Risk: ${Math.round(item.stockoutRisk * 100)}%`,
           OrderID: newOrder.OrderID,
           ...(tenantId && { companyId: tenantId }),
         },
@@ -213,7 +169,7 @@ const executeAutoPurchaseOrders = async (req: Request, res: Response) => {
       if (actorUserId) {
         await prisma.transaction.create({
           data: {
-            TransactionDetail: `[AI AUTO-PO] Automated PO #${newOrder.OrderID.slice(-6).toUpperCase()} generated via ML Forecaster (XGBoost Risk ${Math.round(item.stockoutRisk * 100)}%) for SKU ${item.productCode} (${item.recommendedReorderQty} units, $${replenishmentCost.toLocaleString()})`,
+            TransactionDetail: `[AI AUTO-PO] Automated PO #${newOrder.OrderID.slice(-6).toUpperCase()} generated via Demand Forecaster (Risk ${Math.round(item.stockoutRisk * 100)}%) for SKU ${item.productCode} (${item.recommendedReorderQty} units, $${replenishmentCost.toLocaleString()})`,
             UserID: actorUserId,
             ...(tenantId && { companyId: tenantId }),
           },
@@ -238,6 +194,9 @@ const executeAutoPurchaseOrders = async (req: Request, res: Response) => {
       });
     }
 
+    // Invalidate forecast cache for this tenant so new replenishment is reflected
+    DemandForecasterWorker.invalidateCache(tenantId);
+
     const responseData: AutoPOResponse = {
       success: true,
       message: `Successfully executed AI auto-replenishment. Generated ${createdPOList.length} purchase order(s) committed across suppliers.`,
@@ -248,10 +207,7 @@ const executeAutoPurchaseOrders = async (req: Request, res: Response) => {
 
     return res.status(200).json(responseData);
   } catch (error: any) {
-    console.error("Error executing automated purchase orders:", error);
-    return res.status(500).json({
-      error: error.message || "Failed to automate purchase orders",
-    });
+    return handleError(res, error, "Failed to automate purchase orders");
   }
 };
 

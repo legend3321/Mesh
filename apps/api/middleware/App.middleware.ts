@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import * as jwt from "jsonwebtoken";
-import { prisma } from "../index";
+import { prisma } from "../db";
+import { getJwtSecret } from "../config/jwt";
 
 export interface RequestWithUser extends Request {
   user?: any;
@@ -17,6 +18,24 @@ export const getTenantId = (req: Request, forWrite = false): any => {
 
   // 1. SuperAdmin is for backend-level platform control and does not own or access company operational data
   if (isSuperAdmin) {
+    if (forWrite && req.body?.companyId && typeof req.body.companyId === "string" && req.body.companyId !== "all") {
+      return req.body.companyId;
+    }
+    if (
+      headerTenant &&
+      headerTenant !== "all" &&
+      headerTenant !== "undefined" &&
+      headerTenant !== "null"
+    ) {
+      return headerTenant;
+    }
+    if (
+      req.query?.companyId &&
+      typeof req.query.companyId === "string" &&
+      req.query.companyId !== "all"
+    ) {
+      return req.query.companyId;
+    }
     if (user?.companyId) {
       return user.companyId;
     }
@@ -27,6 +46,20 @@ export const getTenantId = (req: Request, forWrite = false): any => {
   const allowedCompanyIds: string[] =
     reqWithUser.allowedCompanyIds || (user?.companyId ? [user.companyId] : []);
   const defaultCompanyId = user?.companyId || allowedCompanyIds[0];
+
+  // Specific company requested in body (for write operations)
+  if (
+    forWrite &&
+    req.body?.companyId &&
+    typeof req.body.companyId === "string" &&
+    req.body.companyId !== "all"
+  ) {
+    if (allowedCompanyIds.includes(req.body.companyId)) {
+      return req.body.companyId;
+    }
+    // Security fallback: requested companyId is outside user's allowed companies!
+    return null;
+  }
 
   // Specific company requested in header
   if (
@@ -39,7 +72,7 @@ export const getTenantId = (req: Request, forWrite = false): any => {
       return headerTenant;
     }
     // Security fallback: header requests a company outside user's company group!
-    return defaultCompanyId;
+    return forWrite ? null : defaultCompanyId;
   }
 
   // Specific company requested in query
@@ -51,12 +84,12 @@ export const getTenantId = (req: Request, forWrite = false): any => {
     if (allowedCompanyIds.includes(req.query.companyId)) {
       return req.query.companyId;
     }
-    return defaultCompanyId;
+    return forWrite ? null : defaultCompanyId;
   }
 
   // "all" or omitted header:
   if (forWrite) {
-    return defaultCompanyId;
+    return defaultCompanyId || null;
   }
 
   // Multi-company read query inside the company group:
@@ -85,7 +118,7 @@ const verifyToken = async (
     : authHeader;
 
   try {
-    const verifiedUser: any = jwt.verify(token, process.env.SALT || "");
+    const verifiedUser: any = jwt.verify(token, getJwtSecret());
     req.user = verifiedUser;
 
     const user = verifiedUser?.user || verifiedUser;
@@ -115,13 +148,31 @@ const verifyToken = async (
   }
 };
 
+export const requireAdminOrSuperAdmin = (
+  req: RequestWithUser,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = req.user?.user || req.user;
+  if (!user) {
+    return res.status(401).json({ error: "Access Denied: Authentication required." });
+  }
+  if (user.userRole !== "ADMIN" && user.userRole !== "SUPERADMIN") {
+    return res.status(403).json({ error: "Access Denied: Admin or SuperAdmin privileges required." });
+  }
+  next();
+};
+
 export const requireSuperAdmin = (
   req: RequestWithUser,
   res: Response,
   next: NextFunction
 ) => {
   const user = req.user?.user || req.user;
-  if (!user || user.userRole !== "SUPERADMIN") {
+  if (!user) {
+    return res.status(401).json({ error: "Access Denied: Authentication required." });
+  }
+  if (user.userRole !== "SUPERADMIN") {
     return res.status(403).json({ error: "Access Denied: SuperAdmin privileges required." });
   }
   next();

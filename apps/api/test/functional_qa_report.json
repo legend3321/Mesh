@@ -1,0 +1,1084 @@
+{
+  "timestamp": "2026-10-28T14:45:10.423Z",
+  "totalTests": 40,
+  "passed": 40,
+  "failed": 0,
+  "passRate": "100.0%",
+  "results": [
+    {
+      "id": "FUNC-P1-XFER-01",
+      "category": "Coupled Inventory Transfers",
+      "title": "Reject transfer creation exceeding available stock with HTTP 400",
+      "inputVector": {
+        "ProductID": "6ae0c6b8d292a872f9374567",
+        "OutWarehouseID": "6ae0c6b8d292a872f937454b",
+        "InWarehouseID": "6ae0c6b8d292a872f937454c",
+        "TransferQuantity": 6480,
+        "SentDate": "2026-10-28T14:45:09.954Z"
+      },
+      "expectedOutput": {
+        "statusCode": 400,
+        "errorContains": "Insufficient stock",
+        "sourceStockUnchanged": 1480
+      },
+      "actualOutput": {
+        "statusCode": 400,
+        "responseBody": {
+          "error": "Insufficient stock in source warehouse. Available: 1480, Requested: 6480"
+        },
+        "currentSourceStock": 1480
+      },
+      "passed": true,
+      "durationMs": 24
+    },
+    {
+      "id": "FUNC-P1-XFER-02",
+      "category": "Coupled Inventory Transfers",
+      "title": "Dispatch valid transfer atomically, reducing source warehouse InventoryAvailable",
+      "inputVector": {
+        "ProductID": "6ae0c6b8d292a872f9374567",
+        "OutWarehouseID": "6ae0c6b8d292a872f937454b",
+        "InWarehouseID": "6ae0c6b8d292a872f937454c",
+        "TransferQuantity": 15,
+        "SentDate": "2026-10-28T14:45:09.978Z"
+      },
+      "expectedOutput": {
+        "statusCode": 200,
+        "transferStatus": "IN_TRANSIT",
+        "recievedDate": null,
+        "decrementedSourceStock": 1465
+      },
+      "actualOutput": {
+        "statusCode": 200,
+        "transferStatus": "IN_TRANSIT",
+        "recievedDate": null,
+        "actualSourceStock": 1465
+      },
+      "passed": true,
+      "durationMs": 48
+    },
+    {
+      "id": "FUNC-P1-XFER-03",
+      "category": "Coupled Inventory Transfers",
+      "title": "Receive transfer, increment destination warehouse stock, and mark COMPLETED",
+      "inputVector": {
+        "TransferID": "6ae20a76da95122f07b39e44"
+      },
+      "expectedOutput": {
+        "statusCode": 200,
+        "transferStatus": "COMPLETED",
+        "hasRecievedDate": true,
+        "incrementedDestStock": 30
+      },
+      "actualOutput": {
+        "statusCode": 200,
+        "transferStatus": "COMPLETED",
+        "recievedDate": "2026-10-28T14:45:10.031Z",
+        "actualDestStock": 30
+      },
+      "passed": true,
+      "durationMs": 16
+    },
+    {
+      "id": "FUNC-P1-XFER-04",
+      "category": "Coupled Inventory Transfers",
+      "title": "Reject duplicate receive attempts on already COMPLETED transfer with HTTP 400",
+      "inputVector": {
+        "TransferID": "6ae20a76da95122f07b39e44"
+      },
+      "expectedOutput": {
+        "statusCode": 400,
+        "errorContains": "already"
+      },
+      "actualOutput": {
+        "statusCode": 400,
+        "responseBody": {
+          "error": "Transfer has already been received and completed"
+        }
+      },
+      "passed": true,
+      "durationMs": 3
+    },
+    {
+      "id": "FUNC-P1-DELIV-01",
+      "category": "Delivery Warehouse Association",
+      "title": "Create outbound delivery linked to warehouse and verify stock deduction",
+      "inputVector": {
+        "CustomerID": "6ae0c6b8d292a872f937455a",
+        "WarehouseID": "6ae0c6b8d292a872f937454b",
+        "ProductID": "6ae0c6b8d292a872f9374567",
+        "DeliveryQuantity": 5,
+        "SalesDate": "2026-10-28T14:45:10.046Z"
+      },
+      "expectedOutput": {
+        "statusCode": 200,
+        "warehouseBinding": "6ae0c6b8d292a872f937454b",
+        "decrementedStock": 1460
+      },
+      "actualOutput": {
+        "statusCode": 200,
+        "warehouseBinding": "6ae0c6b8d292a872f937454b",
+        "actualStockAfter": 1460
+      },
+      "passed": true,
+      "durationMs": 19
+    },
+    {
+      "id": "FUNC-P1-DELIV-02",
+      "category": "Delivery Warehouse Association",
+      "title": "Reject delivery creation when requested quantity exceeds warehouse stock with HTTP 400",
+      "inputVector": {
+        "CustomerID": "6ae0c6b8d292a872f937455a",
+        "WarehouseID": "6ae0c6b8d292a872f937454b",
+        "ProductID": "6ae0c6b8d292a872f9374567",
+        "DeliveryQuantity": 11459,
+        "SalesDate": "2026-10-28T14:45:10.065Z"
+      },
+      "expectedOutput": {
+        "statusCode": 400,
+        "errorContains": "insufficient stock"
+      },
+      "actualOutput": {
+        "statusCode": 400,
+        "responseBody": {
+          "error": "Insufficient stock in warehouse for product 6ae0c6b8d292a872f9374567. Available: 1460, Requested: 11459"
+        }
+      },
+      "passed": true,
+      "durationMs": 5
+    },
+    {
+      "id": "FUNC-P1-DELIV-03",
+      "category": "Delivery Warehouse Association",
+      "title": "Reject delivery creation referencing a foreign warehouse not owned by tenant",
+      "inputVector": {
+        "CustomerID": "6ae0c6b8d292a872f937455a",
+        "WarehouseID": "6ae0c6b8d292a872f9374550",
+        "ProductID": "6ae0c6b8d292a872f9374567",
+        "DeliveryQuantity": 1,
+        "SalesDate": "2026-10-28T14:45:10.070Z"
+      },
+      "expectedOutput": {
+        "statusCode": 400,
+        "errorContains": "Warehouse not found in caller company"
+      },
+      "actualOutput": {
+        "statusCode": 400,
+        "responseBody": {
+          "error": "Invalid WarehouseID: Warehouse not found in caller company."
+        }
+      },
+      "passed": true,
+      "durationMs": 4
+    },
+    {
+      "id": "FUNC-P1-TX-01",
+      "category": "Immutable Transactions",
+      "title": "Record append-only audit trail entry via POST /api/transaction/add",
+      "inputVector": {
+        "TransactionDetail": "QA Functional Verification Test Audit Event - Enterprise Verification",
+        "UserID": "6ae0c6b8d292a872f9374542"
+      },
+      "expectedOutput": {
+        "statusCode": 200,
+        "hasTransactionID": true
+      },
+      "actualOutput": {
+        "statusCode": 200,
+        "responseBody": {
+          "TransactionID": "6ae20a76da95122f07b39e47",
+          "TransactionDetail": "QA Functional Verification Test Audit Event - Enterprise Verification",
+          "companyId": "6ae0c6b8d292a872f937453d",
+          "UserID": "6ae0c6b8d292a872f9374542",
+          "TransactionOwner": {
+            "userId": "6ae0c6b8d292a872f9374542",
+            "userEmail": "admin@mesh.com",
+            "userPassword": "$2b$10$J5u7RxOqDzhARFaTXARaleBkcRyuTARlVe6gc7EkqpfOTWch9NFrW",
+            "userName": "Marcus Vance",
+            "userRole": "ADMIN",
+            "userRefreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJJZCI6IjZhZTBjNmI4ZDI5MmE4NzJmOTM3NDU0MiIsInVzZXJFbWFpbCI6ImFkbWluQG1lc2guY29tIiwidXNlck5hbWUiOiJNYXJjdXMgVmFuY2UiLCJ1c2VyUm9sZSI6IkFETUlOIiwiY29tcGFueUdyb3VwSWQiOiI2YWUwYzZiOGQyOTJhODcyZjkzNzQ1M2EiLCJjb21wYW55SWQiOiI2YWUwYzZiOGQyOTJhODcyZjkzNzQ1M2QiLCJjb21wYW55Ijp7ImNvbXBhbnlJZCI6IjZhZTBjNmI4ZDI5MmE4NzJmOTM3NDUzZCIsImNvbXBhbnlOYW1lIjoiQXBleCBQYWNpZmljIEZyZWlnaHQgQ29ycCIsImNvbXBhbnlDb2RlIjoiQVBYLVBBQyIsImNvbXBhbnlEb21haW4iOiJwYWNpZmljLmFwZXhsb2dpc3RpY3MuY29tIiwibG9nb1VybCI6bnVsbCwiZGVzY3JpcHRpb24iOiJEZWVwd2F0ZXIgY29udGFpbmVyIGxvZ2lzdGljcywgbXVsdGltb2RhbCByYWlsIHRyYW5zcG9ydCwgYW5kIFBhY2lmaWMgUmltIGNyb3NzLWRvY2tpbmcuIiwiY3JlYXRlZEF0IjoiMjAyNi0xMC0yN1QxNTo0Mzo1Mi4xMjNaIiwidXBkYXRlZEF0IjoiMjAyNi0xMC0yN1QxNTo0Mzo1Mi4xMjNaIiwiY29tcGFueUdyb3VwSWQiOiI2YWUwYzZiOGQyOTJhODcyZjkzNzQ1M2EifSwiY29tcGFueUdyb3VwIjp7ImNvbXBhbnlHcm91cElkIjoiNmFlMGM2YjhkMjkyYTg3MmY5Mzc0NTNhIiwiZ3JvdXBOYW1lIjoiQXBleCBHbG9iYWwgSW50ZXJtb2RhbCBHcm91cCIsImdyb3VwQ29kZSI6IkFQRVgtSE9MRElOR1MiLCJkZXNjcmlwdGlvbiI6IlRpZXItMSBpbnRlcm1vZGFsIGxvZ2lzdGljcyBjb25nbG9tZXJhdGUgbWFuYWdpbmcgcG9ydCBvcGVyYXRpb25zLCByYWlsIGNvcnJpZG9ycywgYW5kIHNtYXJ0IGNvbGQgc3RvcmFnZSBmYWNpbGl0aWVzLiIsImxvZ29VcmwiOm51bGwsImluZHVzdHJ5IjoiTWFyaXRpbWUgVHJhbnNwb3J0LCBDb2xkIENoYWluICYgSW50ZXJtb2RhbCBGcmVpZ2h0IiwiY291bnRyeSI6IlVuaXRlZCBTdGF0ZXMiLCJjcmVhdGVkQXQiOiIyMDI2LTEwLTI3VDE1OjQzOjUyLjEwMFoiLCJ1cGRhdGVkQXQiOiIyMDI2LTEwLTI3VDE1OjQzOjUyLjEwMFoifX0sImlhdCI6MTc5MzExNTkxNX0.JvnpWgZpNQ2j685iJ8YzOtkg2_4V8xkhQ03CDK8X1NA",
+            "lastLogin": null,
+            "ssoProvider": null,
+            "companyGroupId": "6ae0c6b8d292a872f937453a",
+            "companyId": "6ae0c6b8d292a872f937453d"
+          },
+          "company": {
+            "companyId": "6ae0c6b8d292a872f937453d",
+            "companyName": "Apex Pacific Freight Corp",
+            "companyCode": "APX-PAC",
+            "companyDomain": "pacific.apexlogistics.com",
+            "logoUrl": null,
+            "description": "Deepwater container logistics, multimodal rail transport, and Pacific Rim cross-docking.",
+            "createdAt": "2026-10-27T15:43:52.123Z",
+            "updatedAt": "2026-10-27T15:43:52.123Z",
+            "companyGroupId": "6ae0c6b8d292a872f937453a"
+          }
+        }
+      },
+      "passed": true,
+      "durationMs": 8
+    },
+    {
+      "id": "FUNC-P1-TX-02",
+      "category": "Immutable Transactions",
+      "title": "Block audit record modification (PATCH /api/transaction/edit) with HTTP 405",
+      "inputVector": {
+        "TransactionID": "6ae20a76da95122f07b39e47",
+        "TransactionDetail": "MALICIOUS TAMPER ATTEMPT: OVERWRITING AUDIT TRAIL"
+      },
+      "expectedOutput": {
+        "statusCode": 405
+      },
+      "actualOutput": {
+        "statusCode": 405,
+        "responseBody": {
+          "error": "Method Not Allowed: Transaction records are immutable audit logs. Modifications are forbidden."
+        }
+      },
+      "passed": true,
+      "durationMs": 1
+    },
+    {
+      "id": "FUNC-P1-TX-03",
+      "category": "Immutable Transactions",
+      "title": "Block audit record deletion (DELETE /api/transaction/delete/:id) with HTTP 405",
+      "inputVector": {
+        "endpoint": "/api/transaction/delete/6ae20a76da95122f07b39e47",
+        "method": "DELETE"
+      },
+      "expectedOutput": {
+        "statusCode": 405,
+        "recordPreservedInDatabase": true
+      },
+      "actualOutput": {
+        "statusCode": 405,
+        "responseBody": {
+          "error": "Method Not Allowed: Transaction records are immutable audit logs. Deletions are forbidden."
+        },
+        "recordStillExistsInDb": true
+      },
+      "passed": true,
+      "durationMs": 2
+    },
+    {
+      "id": "FUNC-P2-GRID-01",
+      "category": "Virtualized Compact Grid",
+      "title": "Verify GenericEntityTable TanStack virtualization, column definition contract & pagination controls",
+      "inputVector": {
+        "file": "apps/web/app/components/crud/GenericEntityTable.tsx"
+      },
+      "expectedOutput": {
+        "hasTanstackTable": true,
+        "hasPagination": true,
+        "hasSorting": true,
+        "hasColumnDef": true
+      },
+      "actualOutput": {
+        "hasTanstackTable": true,
+        "hasPagination": true,
+        "hasSorting": true,
+        "hasColumnDef": true
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P2-GRID-02",
+      "category": "Virtualized Compact Grid",
+      "title": "Deep nested object search serialization preventing [object Object] anomalies",
+      "inputVector": {
+        "functionName": "extractSearchableStrings"
+      },
+      "expectedOutput": {
+        "hasDeepExtractor": true,
+        "avoidsObjectObject": true
+      },
+      "actualOutput": {
+        "hasDeepExtractor": true,
+        "avoidsObjectObject": true
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P2-GRID-03",
+      "category": "Virtualized Compact Grid",
+      "title": "Multi-type comparator sorting engine (alphanumeric, numeric, date, string)",
+      "inputVector": {
+        "sortingModes": [
+          "alphanumeric",
+          "numeric",
+          "date"
+        ]
+      },
+      "expectedOutput": {
+        "hasSortingTypes": true
+      },
+      "actualOutput": {
+        "hasSortingTypes": true
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P2-DRAWER-01",
+      "category": "Dual-Pane Layouts",
+      "title": "GenericEntityDrawer & ProductDrawer focus trap, backdrop portal & Escape key handlers",
+      "inputVector": {
+        "file": "apps/web/app/components/crud/GenericEntityDrawer.tsx"
+      },
+      "expectedOutput": {
+        "hasPortal": true,
+        "hasEscapeHandler": true,
+        "hasFocusTrap": true
+      },
+      "actualOutput": {
+        "hasPortal": true,
+        "hasEscapeHandler": true,
+        "hasFocusTrap": true
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P2-DRAWER-02",
+      "category": "Dual-Pane Layouts",
+      "title": "Dual-pane entity inspection, action callback dispatch (onEdit/onDelete), & related link mapping",
+      "inputVector": {
+        "file": "apps/web/app/components/crud/GenericEntityDrawer.tsx"
+      },
+      "expectedOutput": {
+        "hasEditAction": true,
+        "hasDeleteAction": true,
+        "hasRelatedLinks": true
+      },
+      "actualOutput": {
+        "hasEditAction": true,
+        "hasDeleteAction": true,
+        "hasRelatedLinks": true
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P2-AUTOPO-01",
+      "category": "Compound PO Transactions",
+      "title": "Commit automated purchase orders via POST /api/forecast/auto-po for high-risk stockout SKUs",
+      "inputVector": {
+        "inventoryIds": [
+          "6ae0c6b8d292a872f9374575"
+        ],
+        "riskThreshold": 0.1
+      },
+      "expectedOutput": {
+        "statusCode": 200,
+        "success": true,
+        "hasOrdersArray": true
+      },
+      "actualOutput": {
+        "statusCode": 200,
+        "success": true,
+        "createdOrdersCount": 1,
+        "totalCapitalCommitted": 579562.5
+      },
+      "passed": true,
+      "durationMs": 40
+    },
+    {
+      "id": "FUNC-P2-AUTOPO-02",
+      "category": "Compound PO Transactions",
+      "title": "Compound transaction atomicity: verify Order, OrderDetail, Payment, and Transaction audit log creation",
+      "inputVector": {
+        "targetOrderId": "6ae20a76da95122f07b39e48"
+      },
+      "expectedOutput": {
+        "orderCreated": true,
+        "orderDetailCreated": true,
+        "paymentCreated": true
+      },
+      "actualOutput": {
+        "orderCreated": true,
+        "orderDetailCreated": true,
+        "paymentCreated": true,
+        "auditTransactionLogged": true
+      },
+      "passed": true,
+      "durationMs": 1
+    },
+    {
+      "id": "FUNC-P3-MATCH-01",
+      "category": "Three-Way Matching Engine",
+      "title": "Perfect PO-GR-Invoice 3-way match clears automatically as MATCH_CLEARED",
+      "inputVector": {
+        "orderId": "PO-2026-9001",
+        "invoiceId": "INV-2026-1001",
+        "invoiceNumber": "INV-APEX-1001",
+        "poItems": [
+          {
+            "productId": "6ae0c6b8d292a872f9374567",
+            "productCode": "MSH-9402-TX",
+            "quantityOrdered": 50,
+            "unitPrice": 120
+          }
+        ],
+        "grItems": [
+          {
+            "productId": "6ae0c6b8d292a872f9374567",
+            "quantityReceived": 50,
+            "quantityDamaged": 0,
+            "inspectionStatus": "PASSED"
+          }
+        ],
+        "invoiceItems": [
+          {
+            "productId": "6ae0c6b8d292a872f9374567",
+            "quantityBilled": 50,
+            "unitPrice": 120,
+            "lineTotal": 6000
+          }
+        ]
+      },
+      "expectedOutput": {
+        "overallStatus": "MATCH_CLEARED",
+        "matched": true,
+        "requiresApproval": false,
+        "totalVariance": 0
+      },
+      "actualOutput": {
+        "overallStatus": "MATCH_CLEARED",
+        "matched": true,
+        "requiresApproval": false,
+        "totalVariance": 0
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P3-MATCH-02",
+      "category": "Three-Way Matching Engine",
+      "title": "Quantity variance overbilling triggers MATCH_VARIANCE_HOLD & requiresApproval",
+      "inputVector": {
+        "orderId": "PO-2026-9002",
+        "invoiceId": "INV-2026-1002",
+        "invoiceNumber": "INV-APEX-1002",
+        "poItems": [
+          {
+            "productId": "6ae0c6b8d292a872f9374567",
+            "productCode": "MSH-9402-TX",
+            "quantityOrdered": 100,
+            "unitPrice": 120
+          }
+        ],
+        "grItems": [
+          {
+            "productId": "6ae0c6b8d292a872f9374567",
+            "quantityReceived": 80,
+            "quantityDamaged": 0,
+            "inspectionStatus": "PASSED"
+          }
+        ],
+        "invoiceItems": [
+          {
+            "productId": "6ae0c6b8d292a872f9374567",
+            "quantityBilled": 100,
+            "unitPrice": 120,
+            "lineTotal": 12000
+          }
+        ]
+      },
+      "expectedOutput": {
+        "overallStatus": "MATCH_VARIANCE_HOLD",
+        "matched": false,
+        "requiresApproval": true,
+        "quantityVariance": 20
+      },
+      "actualOutput": {
+        "overallStatus": "MATCH_VARIANCE_HOLD",
+        "matched": false,
+        "requiresApproval": true,
+        "quantityVariance": 20
+      },
+      "passed": true,
+      "durationMs": 1
+    },
+    {
+      "id": "FUNC-P3-MATCH-03",
+      "category": "Three-Way Matching Engine",
+      "title": "Price variance above contractual PO price triggers MATCH_VARIANCE_HOLD & line discrepancy",
+      "inputVector": {
+        "orderId": "PO-2026-9003",
+        "invoiceId": "INV-2026-1003",
+        "invoiceNumber": "INV-APEX-1003",
+        "poItems": [
+          {
+            "productId": "6ae0c6b8d292a872f9374567",
+            "productCode": "MSH-9402-TX",
+            "quantityOrdered": 10,
+            "unitPrice": 100
+          }
+        ],
+        "grItems": [
+          {
+            "productId": "6ae0c6b8d292a872f9374567",
+            "quantityReceived": 10,
+            "quantityDamaged": 0,
+            "inspectionStatus": "PASSED"
+          }
+        ],
+        "invoiceItems": [
+          {
+            "productId": "6ae0c6b8d292a872f9374567",
+            "quantityBilled": 10,
+            "unitPrice": 125,
+            "lineTotal": 1250
+          }
+        ]
+      },
+      "expectedOutput": {
+        "overallStatus": "MATCH_VARIANCE_HOLD",
+        "matched": false,
+        "requiresApproval": true,
+        "priceVariance": 250
+      },
+      "actualOutput": {
+        "overallStatus": "MATCH_VARIANCE_HOLD",
+        "matched": false,
+        "requiresApproval": true,
+        "priceVariance": 250
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P3-MKCK-01",
+      "category": "Maker-Checker Approval Workflows",
+      "title": "Enforce Segregation of Duties: reject self-approval when approvedBy === createdBy",
+      "inputVector": {
+        "approvalId": "APP-2026-001",
+        "entityType": "INVOICE",
+        "entityId": "INV-APEX-1002",
+        "requestedAmount": 12000,
+        "createdBy": "ops_lead@mesh.com",
+        "approvedBy": "ops_lead@mesh.com",
+        "approvalNotes": "Trying to self-clear invoice variance hold"
+      },
+      "expectedOutput": {
+        "allowed": false,
+        "violatesSegregationOfDuties": true,
+        "status": "REJECTED"
+      },
+      "actualOutput": {
+        "allowed": false,
+        "violatesSegregationOfDuties": true,
+        "status": "REJECTED",
+        "error": "Segregation of Duties Violation: Maker (ops_lead@mesh.com) cannot approve their own INVOICE request. A distinct authorized checker is required."
+      },
+      "passed": true,
+      "durationMs": 6
+    },
+    {
+      "id": "FUNC-P3-MKCK-02",
+      "category": "Maker-Checker Approval Workflows",
+      "title": "Authorized secondary checker (approvedBy != createdBy) successfully approves pending clearance",
+      "inputVector": {
+        "approvalId": "APP-2026-002",
+        "entityType": "INVOICE",
+        "entityId": "INV-APEX-1002",
+        "requestedAmount": 12000,
+        "createdBy": "ops_lead@mesh.com",
+        "approvedBy": "cfo_director@mesh.com",
+        "approvalNotes": "Secondary financial review completed and approved"
+      },
+      "expectedOutput": {
+        "allowed": true,
+        "violatesSegregationOfDuties": false,
+        "status": "APPROVED"
+      },
+      "actualOutput": {
+        "allowed": true,
+        "violatesSegregationOfDuties": false,
+        "status": "APPROVED",
+        "approvedBy": "cfo_director@mesh.com"
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P3-RECON-01",
+      "category": "Invoice Settlement Reconciliation",
+      "title": "Multi-payment settlement reconciliation verifies zero balance and marks SETTLED",
+      "inputVector": {
+        "invoiceId": "INV-RECON-01",
+        "invoiceNumber": "INV-RECON-1001",
+        "invoiceTotal": 5000,
+        "payments": [
+          {
+            "paymentId": "PAY-01",
+            "amount": 3000,
+            "status": "COMPLETED"
+          },
+          {
+            "paymentId": "PAY-02",
+            "amount": 2000,
+            "status": "COMPLETED"
+          }
+        ]
+      },
+      "expectedOutput": {
+        "isFullySettled": true,
+        "status": "SETTLED",
+        "outstandingBalance": 0
+      },
+      "actualOutput": {
+        "isFullySettled": true,
+        "status": "SETTLED",
+        "outstandingBalance": 0,
+        "totalPaid": 5000
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P4-WMS-01",
+      "category": "WMS Bin Allocation",
+      "title": "Dynamic best-fit bin placement satisfying weight and cubic volume constraints",
+      "inputVector": {
+        "productId": "6ae0c6b8d292a872f9374567",
+        "productCode": "MSH-9402-TX",
+        "quantity": 20,
+        "unitWeightKg": 2.5,
+        "unitVolumeCbm": 0.02,
+        "requiresRefrigeration": false,
+        "warehouseId": "6ae0c6b8d292a872f937454b"
+      },
+      "expectedOutput": {
+        "success": true,
+        "binCode": "A01-R01-S01-B01",
+        "allocatedQuantity": 20
+      },
+      "actualOutput": {
+        "success": true,
+        "binCode": "A01-R01-S01-B01",
+        "allocatedQuantity": 20,
+        "remainingWeight": 350
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P4-WMS-02",
+      "category": "WMS Bin Allocation",
+      "title": "Cold chain zone constraint enforcement: routes refrigerated SKU to COLD_CHAIN bin",
+      "inputVector": {
+        "productId": "6ae0c6b8d292a872f9374567",
+        "productCode": "MSH-9402-TX",
+        "quantity": 10,
+        "unitWeightKg": 5,
+        "unitVolumeCbm": 0.05,
+        "requiresRefrigeration": true,
+        "warehouseId": "6ae0c6b8d292a872f937454b"
+      },
+      "expectedOutput": {
+        "success": true,
+        "zoneType": "COLD_CHAIN",
+        "binCode": "COLD-R01-S01-B01"
+      },
+      "actualOutput": {
+        "success": true,
+        "zoneType": "COLD_CHAIN",
+        "binCode": "COLD-R01-S01-B01"
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P4-WMS-03",
+      "category": "WMS Bin Allocation",
+      "title": "Bin overflow protection: reject SKU placement exceeding maximum bin capacity",
+      "inputVector": {
+        "productId": "6ae0c6b8d292a872f9374567",
+        "productCode": "MSH-9402-TX",
+        "quantity": 5000,
+        "unitWeightKg": 50,
+        "unitVolumeCbm": 1,
+        "requiresRefrigeration": false,
+        "warehouseId": "6ae0c6b8d292a872f937454b"
+      },
+      "expectedOutput": {
+        "success": false,
+        "errorContains": "overflow"
+      },
+      "actualOutput": {
+        "success": false,
+        "error": "Capacity overflow: Requested 5000 units (250000kg, 5000m³) exceed all available candidate bin capacities"
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P4-FEFO-01",
+      "category": "FEFO Batch Allocation",
+      "title": "Multi-lot allocation strictly ordered by earliest expiration date (FEFO)",
+      "inputVector": {
+        "requestedQuantity": 35,
+        "batchCount": 3
+      },
+      "expectedOutput": {
+        "firstBatch": "LOT-2026-15D",
+        "firstBatchQty": 20,
+        "secondBatch": "LOT-2026-45D",
+        "secondBatchQty": 15
+      },
+      "actualOutput": {
+        "allocations": [
+          {
+            "batch": "LOT-2026-15D",
+            "qty": 20
+          },
+          {
+            "batch": "LOT-2026-45D",
+            "qty": 15
+          }
+        ],
+        "fullyAllocated": true
+      },
+      "passed": true,
+      "durationMs": 1
+    },
+    {
+      "id": "FUNC-P4-FEFO-02",
+      "category": "FEFO Batch Allocation",
+      "title": "Automatic quarantine and skip of expired batches (expiryDate <= asOfDate)",
+      "inputVector": {
+        "batches": [
+          "LOT-EXPIRED-PAST",
+          "LOT-FRESH-30D"
+        ]
+      },
+      "expectedOutput": {
+        "skippedExpiredBatch": "LOT-EXPIRED-PAST",
+        "allocatedFreshBatch": "LOT-FRESH-30D"
+      },
+      "actualOutput": {
+        "expiredFound": [
+          "LOT-EXPIRED-PAST"
+        ],
+        "allocatedBatches": [
+          "LOT-FRESH-30D"
+        ]
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P4-RMA-01",
+      "category": "RMA Reverse Logistics Intake",
+      "title": "Unopened return intake: issue full credit and restock to active warehouse inventory",
+      "inputVector": {
+        "rmaNumber": "RMA-2026-001",
+        "customerId": "6ae0c6b8d292a872f937455a",
+        "items": [
+          {
+            "productId": "6ae0c6b8d292a872f9374567",
+            "quantity": 5,
+            "condition": "UNOPENED",
+            "unitCost": 120,
+            "warehouseId": "6ae0c6b8d292a872f937454b"
+          }
+        ]
+      },
+      "expectedOutput": {
+        "disposition": "RESTOCK",
+        "restockedCount": 5,
+        "totalCredit": 600
+      },
+      "actualOutput": {
+        "disposition": "RESTOCK",
+        "restockedCount": 5,
+        "totalCredit": 600
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P4-RMA-02",
+      "category": "RMA Reverse Logistics Intake",
+      "title": "Defective/damaged return intake: route to quarantine hold without sellable stock increment",
+      "inputVector": {
+        "rmaNumber": "RMA-2026-002",
+        "customerId": "6ae0c6b8d292a872f937455a",
+        "items": [
+          {
+            "productId": "6ae0c6b8d292a872f9374567",
+            "quantity": 3,
+            "condition": "DEFECTIVE",
+            "unitCost": 120,
+            "warehouseId": "6ae0c6b8d292a872f937454b"
+          }
+        ]
+      },
+      "expectedOutput": {
+        "disposition": "QUARANTINE",
+        "quarantinedCount": 3,
+        "inventoryRestocked": false
+      },
+      "actualOutput": {
+        "disposition": "QUARANTINE",
+        "quarantinedCount": 3,
+        "inventoryRestocked": false
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P5-EDI-01",
+      "category": "EDI 850 Purchase Order",
+      "title": "ANSI X12 850 generation and bidirectional parsing with ISA/GS/BEG/PO1 segments",
+      "inputVector": {
+        "senderDuns": "001234567",
+        "receiverDuns": "998877665",
+        "controlNumber": "10045",
+        "poNumber": "PO-850-2026-01",
+        "poDate": "2026-10-28",
+        "currency": "USD",
+        "items": [
+          {
+            "line": 1,
+            "productCode": "MSH-9402-TX",
+            "quantity": 25,
+            "unitPrice": 150,
+            "uom": "EA"
+          }
+        ],
+        "totalAmount": 3750
+      },
+      "expectedOutput": {
+        "hasST850": true,
+        "reconstructedPoNumber": "PO-850-2026-01",
+        "totalAmount": 3750
+      },
+      "actualOutput": {
+        "hasST850": true,
+        "reconstructedPoNumber": "PO-850-2026-01",
+        "totalAmount": 3750
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P5-EDI-02",
+      "category": "EDI 856 Ship Notice ASN",
+      "title": "ANSI X12 856 ASN hierarchical level serialization (HL*1 Shipment, HL*2 Order, HL*3 Item)",
+      "inputVector": {
+        "senderDuns": "001234567",
+        "receiverDuns": "998877665",
+        "controlNumber": "20089",
+        "shipmentId": "SHP-2026-0089",
+        "shipDate": "2026-10-28",
+        "carrierScac": "ODFL",
+        "trackingNumber": "TRK-992817263",
+        "billOfLading": "BOL-7762514",
+        "poNumber": "PO-850-2026-01",
+        "packagingCode": "CTN25",
+        "totalWeightKg": 62.5,
+        "items": [
+          {
+            "line": 1,
+            "productCode": "MSH-9402-TX",
+            "quantityShipped": 25,
+            "lotNumber": "LOT-9981"
+          }
+        ]
+      },
+      "expectedOutput": {
+        "hasST856": true,
+        "hasHierarchicalLevels": true,
+        "trackingNumber": "TRK-992817263"
+      },
+      "actualOutput": {
+        "hasST856": true,
+        "hasHierarchicalLevels": true,
+        "trackingNumber": "TRK-992817263",
+        "billOfLading": "BOL-7762514"
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P5-EDI-03",
+      "category": "EDI 810 Commercial Invoice",
+      "title": "ANSI X12 810 invoice generation and TDS monetary summary assertion",
+      "inputVector": {
+        "senderDuns": "001234567",
+        "receiverDuns": "998877665",
+        "controlNumber": "30042",
+        "invoiceNumber": "INV-810-2026-99",
+        "invoiceDate": "2026-10-28",
+        "poNumber": "PO-850-2026-01",
+        "currency": "USD",
+        "subtotal": 3750,
+        "taxAmount": 250,
+        "totalAmount": 4000,
+        "items": [
+          {
+            "line": 1,
+            "productCode": "MSH-9402-TX",
+            "quantityBilled": 25,
+            "unitPrice": 150,
+            "lineTotal": 3750
+          }
+        ]
+      },
+      "expectedOutput": {
+        "hasST810": true,
+        "reconstructedInvoiceNumber": "INV-810-2026-99",
+        "totalAmount": 4000
+      },
+      "actualOutput": {
+        "hasST810": true,
+        "reconstructedInvoiceNumber": "INV-810-2026-99",
+        "totalAmount": 4000
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P5-PALETTE-01",
+      "category": "Global Facility Command Palette",
+      "title": "GlobalSearchModal Cmd+K / Ctrl+K and Escape keyboard listener binding",
+      "inputVector": {
+        "file": "apps/web/app/components/GlobalSearchModal.tsx"
+      },
+      "expectedOutput": {
+        "hasCmdKListener": true,
+        "hasEscapeListener": true
+      },
+      "actualOutput": {
+        "hasCmdKListener": true,
+        "hasEscapeListener": true
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P5-PALETTE-02",
+      "category": "Global Facility Command Palette",
+      "title": "Cross-facility entity search indexing and keyboard arrow navigation",
+      "inputVector": {
+        "indexedEntities": [
+          "product",
+          "warehouse",
+          "order"
+        ]
+      },
+      "expectedOutput": {
+        "indexesProducts": true,
+        "indexesWarehouses": true,
+        "indexesOrders": true,
+        "hasArrowNav": true
+      },
+      "actualOutput": {
+        "indexesProducts": true,
+        "indexesWarehouses": true,
+        "indexesOrders": true,
+        "hasArrowNav": true
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P6-CLEAN-01",
+      "category": "Client Bundle Cleanliness",
+      "title": "Assert zero plaintext passwords ('admin123') in client login form code",
+      "inputVector": {
+        "targetFile": "apps/web/app/(routes)/login/form.tsx",
+        "searchPattern": "admin123"
+      },
+      "expectedOutput": {
+        "occurrenceCount": 0
+      },
+      "actualOutput": {
+        "occurrenceCount": 0
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P6-CLEAN-02",
+      "category": "Client Bundle Cleanliness",
+      "title": "Assert zero DEMO_ACCOUNTS objects or array definitions in client code",
+      "inputVector": {
+        "targetFile": "apps/web/app/(routes)/login/form.tsx",
+        "searchPattern": "DEMO_ACCOUNTS"
+      },
+      "expectedOutput": {
+        "occurrenceCount": 0
+      },
+      "actualOutput": {
+        "occurrenceCount": 0
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P6-CLEAN-03",
+      "category": "Client Bundle Cleanliness",
+      "title": "Assert zero client-side email role containment routing (includes('superadmin'))",
+      "inputVector": {
+        "targetFile": "apps/web/app/(routes)/login/form.tsx",
+        "searchPattern": "includes('superadmin')"
+      },
+      "expectedOutput": {
+        "occurrenceCount": 0
+      },
+      "actualOutput": {
+        "occurrenceCount": 0
+      },
+      "passed": true,
+      "durationMs": 0
+    },
+    {
+      "id": "FUNC-P6-BUILD-01",
+      "category": "Build & Type Safety",
+      "title": "Execute npm run check-types across all workspace packages",
+      "inputVector": "npm run check-types across packages",
+      "expectedOutput": {
+        "exitCode": 0,
+        "errors": 0
+      },
+      "actualOutput": {
+        "exitCode": 0,
+        "logSnippet": "eck-types: \r\n@mesh/api:check-types: \r\n@mesh/api:check-types: > @mesh/api@1.0.0 check-types\r\n@mesh/api:check-types: > tsc --noEmit\r\n@mesh/api:check-types: \r\n\n Tasks:    3 successful, 3 total\nCached:    3 cached, 3 total\n  Time:    6ms >>> FULL TURBO"
+      },
+      "passed": true,
+      "durationMs": 220
+    },
+    {
+      "id": "FUNC-P6-BUILD-02",
+      "category": "Build & Type Safety",
+      "title": "Verify all 8 core dashboard route modules exist and compile cleanly",
+      "inputVector": {
+        "coreRoutesChecked": [
+          "dashboard/page.tsx",
+          "dashboard/inventory/page.tsx",
+          "dashboard/transfer/page.tsx",
+          "dashboard/delivery/page.tsx",
+          "dashboard/transaction/page.tsx",
+          "dashboard/customer/page.tsx",
+          "dashboard/warehouse/page.tsx",
+          "dashboard/order/page.tsx"
+        ]
+      },
+      "expectedOutput": {
+        "missingCount": 0,
+        "missingRoutes": []
+      },
+      "actualOutput": {
+        "missingCount": 0,
+        "missingRoutes": []
+      },
+      "passed": true,
+      "durationMs": 0
+    }
+  ]
+}

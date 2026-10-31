@@ -7,6 +7,9 @@
     "start": "nodemon index.ts",
     "build": "tsc",
     "check-types": "tsc --noEmit",
+    "test:security": "ts-node test/security-pen-test.ts",
+    "test:pen": "DOTENV_CONFIG_PATH=.env ts-node -r dotenv/config test/enterprise_appsec_pen_test.ts",
+    "test:functional": "ts-node test/functional_qa_suite.ts",
     "prisma:generate": "prisma generate",
     "prisma:seed": "ts-node prisma/seed.ts"
   },
@@ -24,10 +27,13 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.2",
     "nodemon": "^3.1.4",
     "prisma": "^5.17.0",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@faker-js/faker": "^8.4.1",

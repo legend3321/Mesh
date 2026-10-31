@@ -67,11 +67,16 @@ const sanitizeProductData = (data: any) => {
 
 const addProduct = async (req: Request, res: Response) => {
   try {
-    const data = sanitizeProductData(req.body);
-    const tenantId = req.body.companyId || getTenantId(req);
-    if (tenantId) {
-      data.companyId = tenantId;
+    const tenantId = getTenantId(req, true);
+    if (!tenantId || typeof tenantId !== "string") {
+      return res.status(400).json({
+        error: "A valid companyId is required for this operation. Please specify a specific companyId.",
+      });
     }
+
+    const data = sanitizeProductData(req.body);
+    data.companyId = tenantId;
+
     const newProduct = await prisma.product.create({
       data,
       include: { company: true },
@@ -90,10 +95,21 @@ const editProduct = async (req: Request, res: Response) => {
     if (!ProductID) {
       return res.status(400).json({ error: "ProductID is required" });
     }
-    const updateData = sanitizeProductData(req.body);
-    if (req.body.companyId !== undefined) {
-      updateData.companyId = req.body.companyId || null;
+
+    const tenantId = getTenantId(req);
+    const existing = await prisma.product.findFirst({
+      where: {
+        ProductID,
+        ...(tenantId ? { companyId: tenantId } : {}),
+      },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: "Product not found or unauthorized" });
     }
+
+    const updateData = sanitizeProductData(req.body);
+    delete updateData.companyId;
 
     const updatedProduct = await prisma.product.update({
       where: {
@@ -134,9 +150,18 @@ const getProduct = async (
   res: Response
 ) => {
   try {
-    const product = await prisma.product.findMany({
-      where: { ProductID: req.params.ProductID },
+    const tenantId = getTenantId(req);
+    const product = await prisma.product.findFirst({
+      where: {
+        ProductID: req.params.ProductID,
+        ...(tenantId ? { companyId: tenantId } : {}),
+      },
+      include: { company: true },
     });
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found or unauthorized" });
+    }
 
     res.status(200).json(product);
   } catch (exception) {
@@ -149,9 +174,26 @@ const deleteProduct = async (
   res: Response
 ) => {
   try {
+    const ProductID = req.params.ProductID;
+    if (!ProductID) {
+      return res.status(400).json({ error: "ProductID is required" });
+    }
+
+    const tenantId = getTenantId(req);
+    const existing = await prisma.product.findFirst({
+      where: {
+        ProductID,
+        ...(tenantId ? { companyId: tenantId } : {}),
+      },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: "Product not found or unauthorized" });
+    }
+
     const product = await prisma.product.delete({
       where: {
-        ProductID: req.params.ProductID,
+        ProductID,
       },
     });
 

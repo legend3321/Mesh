@@ -211,19 +211,7 @@ const deleteCompany = async (req: Request, res: Response) => {
     const isSuperAdmin = user?.userRole === "SUPERADMIN";
 
     if (!isSuperAdmin) {
-      const existing = await prisma.company.findUnique({
-        where: { companyId },
-        select: { companyGroupId: true, companyId: true },
-      });
-      if (!existing) {
-        return res.status(404).json({ error: "Company not found" });
-      }
-      const isAllowed =
-        (user?.companyGroupId && existing.companyGroupId === user.companyGroupId) ||
-        (user?.companyId && existing.companyId === user.companyId);
-      if (!isAllowed) {
-        return res.status(403).json({ error: "Access Denied: You cannot delete companies outside your company group." });
-      }
+      return res.status(403).json({ error: "Access Denied: Only SuperAdmin can delete a company." });
     }
 
     // Unlink users before deleting

@@ -13,9 +13,14 @@ OrderDetailRouter.patch(
   verifyToken,
   OrderDetailController.editOrderDetail
 );
-OrderDetailRouter.get("/getAll", OrderDetailController.getAllOrderDetails);
+OrderDetailRouter.get(
+  "/getAll",
+  verifyToken,
+  OrderDetailController.getAllOrderDetails
+);
 OrderDetailRouter.get(
   "/get/:OrderDetailID",
+  verifyToken,
   OrderDetailController.getOrderDetail
 );
 OrderDetailRouter.delete(

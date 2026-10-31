@@ -12,5 +12,7 @@ OrderRouter.delete(
   verifyToken,
   OrderController.deleteOrder
 );
+OrderRouter.post("/batch-status", verifyToken, OrderController.batchStatusUpdate);
+OrderRouter.post("/batch-requisitions", verifyToken, OrderController.batchCreateRequisitions);
 
 export default OrderRouter;

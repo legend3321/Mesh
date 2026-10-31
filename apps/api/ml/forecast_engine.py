@@ -295,8 +295,39 @@ def run_stockout_forecast(payload):
     return result
 
 
+def train_offline_batch():
+    """
+    Offline batch model training and validation.
+    Generates supply chain benchmark features, trains ensemble models, and evaluates metrics.
+    """
+    scaler, xgb_model, rf_model, feature_importance_dict = build_and_fit_models()
+    X_val, y_val = generate_benchmark_training_data(n_samples=300)
+    X_val_scaled = scaler.transform(X_val)
+    xgb_preds = xgb_model.predict(X_val)
+    rf_preds = rf_model.predict(X_val_scaled)
+
+    xgb_acc = float(np.mean(xgb_preds == y_val))
+    rf_acc = float(np.mean(rf_preds == y_val))
+
+    metrics = {
+        "status": "success",
+        "job": "offline_batch_training",
+        "models": {
+            "xgboost": {"accuracy": round(xgb_acc, 4), "n_estimators": 60, "max_depth": 4},
+            "random_forest": {"accuracy": round(rf_acc, 4), "n_estimators": 45, "max_depth": 5}
+        },
+        "feature_importances": feature_importance_dict
+    }
+    return metrics
+
+
 def main():
     try:
+        if "--train-offline" in sys.argv:
+            metrics = train_offline_batch()
+            print(json.dumps(metrics))
+            return
+
         # Read JSON from stdin or file argument
         if len(sys.argv) > 1 and os.path.exists(sys.argv[1]):
             with open(sys.argv[1], "r") as f:
@@ -322,3 +353,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

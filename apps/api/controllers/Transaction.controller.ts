@@ -1,13 +1,20 @@
 import { Request, Response } from "express";
-import { prisma } from "../index";
+import { prisma } from "../db";
 import { getTenantId } from "../middleware/App.middleware";
 
 const addTransaction = async (req: Request, res: Response) => {
   try {
-    const tenantId = req.body.companyId || getTenantId(req);
-    const data = {
-      ...req.body,
-      ...(tenantId && { companyId: tenantId }),
+    const tenantId = getTenantId(req, true);
+    if (!tenantId || typeof tenantId !== "string") {
+      return res.status(400).json({
+        error: "A valid companyId is required for this operation. Please specify a specific companyId.",
+      });
+    }
+
+    const data: any = {
+      TransactionDetail: req.body.TransactionDetail ? String(req.body.TransactionDetail) : "",
+      UserID: req.body.UserID,
+      companyId: tenantId,
     };
 
     const newTransaction = await prisma.transaction.create({
@@ -19,26 +26,6 @@ const addTransaction = async (req: Request, res: Response) => {
     });
 
     res.status(200).json(newTransaction);
-  } catch (exception) {
-    res.status(500).json({ error: exception });
-  }
-};
-
-const editTransaction = async (req: Request, res: Response) => {
-  try {
-    const { TransactionID, ...updateData } = req.body;
-    const updatedTransaction = await prisma.transaction.update({
-      where: {
-        TransactionID: TransactionID,
-      },
-      data: updateData,
-      include: {
-        TransactionOwner: true,
-        company: true,
-      },
-    });
-
-    res.status(200).json(updatedTransaction);
   } catch (exception) {
     res.status(500).json({ error: exception });
   }
@@ -70,30 +57,21 @@ const getTransaction = async (
   res: Response
 ) => {
   try {
-    const Transaction = await prisma.transaction.findMany({
-      where: { TransactionID: req.params.TransactionID },
+    const tenantId = getTenantId(req);
+    const Transaction = await prisma.transaction.findFirst({
+      where: {
+        TransactionID: req.params.TransactionID,
+        ...(tenantId ? { companyId: tenantId } : {}),
+      },
       include: {
         TransactionOwner: true,
         company: true,
       },
     });
 
-    res.status(200).json(Transaction);
-  } catch (exception) {
-    res.status(500).json({ error: exception });
-  }
-};
-
-const deleteTransaction = async (
-  req: Request<{ TransactionID: string }>,
-  res: Response
-) => {
-  try {
-    const Transaction = await prisma.transaction.delete({
-      where: {
-        TransactionID: req.params.TransactionID,
-      },
-    });
+    if (!Transaction) {
+      return res.status(404).json({ error: "Transaction not found or unauthorized" });
+    }
 
     res.status(200).json(Transaction);
   } catch (exception) {
@@ -103,8 +81,6 @@ const deleteTransaction = async (
 
 export default {
   addTransaction,
-  editTransaction,
   getAllTransactions,
   getTransaction,
-  deleteTransaction,
 };

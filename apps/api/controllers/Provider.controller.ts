@@ -4,10 +4,17 @@ import { getTenantId } from "../middleware/App.middleware";
 
 const addProvider = async (req: Request, res: Response) => {
   try {
-    const tenantId = req.body.companyId || getTenantId(req);
-    const data = {
-      ...req.body,
-      ...(tenantId && { companyId: tenantId }),
+    const tenantId = getTenantId(req, true);
+    if (!tenantId || typeof tenantId !== "string") {
+      return res.status(400).json({
+        error: "A valid companyId is required for this operation. Please specify a specific companyId.",
+      });
+    }
+
+    const data: any = {
+      ProviderName: req.body.ProviderName ? String(req.body.ProviderName) : "",
+      ProviderAddress: req.body.ProviderAddress ? String(req.body.ProviderAddress) : "",
+      companyId: tenantId,
     };
 
     const newProvider = await prisma.provider.create({
@@ -23,7 +30,28 @@ const addProvider = async (req: Request, res: Response) => {
 
 const editProvider = async (req: Request, res: Response) => {
   try {
-    const { ProviderID, ...updateData } = req.body;
+    const ProviderID = req.body.ProviderID || req.params?.ProviderID;
+    if (!ProviderID) {
+      return res.status(400).json({ error: "ProviderID is required" });
+    }
+
+    const tenantId = getTenantId(req);
+    const existing = await prisma.provider.findFirst({
+      where: {
+        ProviderID,
+        ...(tenantId ? { companyId: tenantId } : {}),
+      },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: "Provider not found or unauthorized" });
+    }
+
+    const updateData: any = {};
+    if (req.body.ProviderName !== undefined) updateData.ProviderName = String(req.body.ProviderName);
+    if (req.body.ProviderAddress !== undefined) updateData.ProviderAddress = String(req.body.ProviderAddress);
+    delete updateData.companyId;
+
     const updatedProvider = await prisma.provider.update({
       where: {
         ProviderID: ProviderID,
@@ -61,10 +89,18 @@ const getProvider = async (
   res: Response
 ) => {
   try {
-    const Provider = await prisma.provider.findMany({
-      where: { ProviderID: req.params.ProviderID },
+    const tenantId = getTenantId(req);
+    const Provider = await prisma.provider.findFirst({
+      where: {
+        ProviderID: req.params.ProviderID,
+        ...(tenantId ? { companyId: tenantId } : {}),
+      },
       include: { company: true },
     });
+
+    if (!Provider) {
+      return res.status(404).json({ error: "Provider not found or unauthorized" });
+    }
 
     res.status(200).json(Provider);
   } catch (exception) {
@@ -77,9 +113,26 @@ const deleteProvider = async (
   res: Response
 ) => {
   try {
+    const ProviderID = req.params.ProviderID;
+    if (!ProviderID) {
+      return res.status(400).json({ error: "ProviderID is required" });
+    }
+
+    const tenantId = getTenantId(req);
+    const existing = await prisma.provider.findFirst({
+      where: {
+        ProviderID,
+        ...(tenantId ? { companyId: tenantId } : {}),
+      },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: "Provider not found or unauthorized" });
+    }
+
     const Provider = await prisma.provider.delete({
       where: {
-        ProviderID: req.params.ProviderID,
+        ProviderID,
       },
     });
 

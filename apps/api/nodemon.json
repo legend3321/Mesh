@@ -1,0 +1,18 @@
+{
+  "watch": [
+    "controllers",
+    "routes",
+    "middleware",
+    "config",
+    "services",
+    "index.ts",
+    "db.ts"
+  ],
+  "ignore": [
+    "test/**",
+    "*.json",
+    "dist/**",
+    "ml/**"
+  ],
+  "ext": "ts,js"
+}

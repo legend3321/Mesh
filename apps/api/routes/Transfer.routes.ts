@@ -4,6 +4,12 @@ import TransferController from "../controllers/Transfer.controller";
 const TransferRouter = express.Router();
 
 TransferRouter.post("/add", verifyToken, TransferController.addTransfer);
+TransferRouter.post("/receive", verifyToken, TransferController.receiveTransfer);
+TransferRouter.patch(
+  "/receive/:TransferID",
+  verifyToken,
+  TransferController.receiveTransfer
+);
 TransferRouter.patch("/edit", verifyToken, TransferController.editTransfer);
 TransferRouter.get("/getAll", verifyToken, TransferController.getAllTransfers);
 TransferRouter.get("/get/:TransferID", verifyToken, TransferController.getTransfer);

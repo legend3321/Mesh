@@ -15,10 +15,12 @@ DeliveryDetailRouter.patch(
 );
 DeliveryDetailRouter.get(
   "/getAll",
+  verifyToken,
   DeliveryDetailController.getAllDeliveryDetails
 );
 DeliveryDetailRouter.get(
   "/get/:DeliveryDetailID",
+  verifyToken,
   DeliveryDetailController.getDeliveryDetail
 );
 DeliveryDetailRouter.delete(

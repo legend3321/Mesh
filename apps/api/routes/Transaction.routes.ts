@@ -8,11 +8,6 @@ TransactionRouter.post(
   verifyToken,
   TransactionController.addTransaction
 );
-TransactionRouter.patch(
-  "/edit",
-  verifyToken,
-  TransactionController.editTransaction
-);
 TransactionRouter.get(
   "/getAll",
   verifyToken,
@@ -23,10 +18,18 @@ TransactionRouter.get(
   verifyToken,
   TransactionController.getTransaction
 );
-TransactionRouter.delete(
-  "/delete/:TransactionID",
-  verifyToken,
-  TransactionController.deleteTransaction
-);
+
+// Transaction audit ledger hardening: Edits and deletions are forbidden (SOX / regulatory immutability)
+TransactionRouter.all(["/edit", "/edit/*"], (_req, res) => {
+  return res.status(405).json({
+    error: "Method Not Allowed: Transaction records are immutable audit logs. Modifications are forbidden.",
+  });
+});
+
+TransactionRouter.all(["/delete", "/delete/*"], (_req, res) => {
+  return res.status(405).json({
+    error: "Method Not Allowed: Transaction records are immutable audit logs. Deletions are forbidden.",
+  });
+});
 
 export default TransactionRouter;

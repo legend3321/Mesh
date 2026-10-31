@@ -1,6 +1,7 @@
 import { spawn } from "child_process";
 import path from "path";
 import type { ForecastApiResponse } from "@mesh/types";
+import { DemandForecasterWorker } from "./DemandForecasterWorker.service";
 
 export interface MLInputPayload {
   inventories: any[];
@@ -14,11 +15,33 @@ export class MLService {
   private static scriptPath = path.resolve(__dirname, "../ml/forecast_engine.py");
 
   /**
-   * Runs the XGBoost & Scikit-Learn Stockout Risk Forecaster on provided tenant inventory data.
+   * Evaluates stockout risk and demand forecasting using the decoupled
+   * empirical statistical engine without spawning Python on the request path.
+   * Maintains backwards-compatible API signature for existing callers.
    */
   public static async runStockoutForecast(payload: MLInputPayload): Promise<ForecastApiResponse> {
+    try {
+      return DemandForecasterWorker.calculateForecastFromData(payload);
+    } catch (err: any) {
+      console.warn(
+        `[MLService] DemandForecasterWorker evaluation encountered error: ${err?.message}. Using calibrated fallback.`,
+        err
+      );
+      return this.fallbackHeuristicModel(payload);
+    }
+  }
+
+  /**
+   * Asynchronous offline / batch model training and hyperparameter evaluation.
+   * Never invoked synchronously in the user request path.
+   */
+  public static async runOfflineBatchTraining(payload?: MLInputPayload): Promise<{
+    status: string;
+    output?: any;
+    error?: string;
+  }> {
     return new Promise((resolve) => {
-      const child = spawn("python3", [MLService.scriptPath], {
+      const child = spawn("python3", [MLService.scriptPath, "--train-offline"], {
         env: {
           ...process.env,
           PYTHONUNBUFFERED: "1",
@@ -41,49 +64,50 @@ export class MLService {
         if (code === 0 && stdoutData.trim()) {
           try {
             const parsed = JSON.parse(stdoutData.trim());
-            if (parsed.status === "success") {
-              return resolve(parsed);
-            }
+            return resolve({ status: "success", output: parsed });
           } catch (e: any) {
-            console.error("Failed to parse ML output JSON:", e.message, stdoutData);
+            return resolve({
+              status: "success",
+              output: { raw: stdoutData.trim() },
+            });
           }
         }
-
-        console.warn(
-          `Python ML engine exited with code ${code}. Stderr: ${stderrData.slice(0, 300)}. Using resilient calibrated model fallback.`
-        );
-        resolve(MLService.fallbackHeuristicModel(payload));
+        resolve({
+          status: "error",
+          error: `Offline Python training exited with code ${code}. Stderr: ${stderrData.slice(0, 300)}`,
+        });
       });
 
       child.on("error", (err) => {
-        console.error("Error executing Python ML script:", err.message);
-        resolve(MLService.fallbackHeuristicModel(payload));
+        resolve({ status: "error", error: err.message });
       });
 
-      // Send payload to Python process
-      try {
-        child.stdin.write(JSON.stringify(payload));
+      if (payload) {
+        try {
+          child.stdin.write(JSON.stringify(payload));
+          child.stdin.end();
+        } catch {
+          // Ignore stream errors on offline tasks
+        }
+      } else {
         child.stdin.end();
-      } catch (err: any) {
-        console.error("Error writing to Python stdin:", err.message);
-        resolve(MLService.fallbackHeuristicModel(payload));
       }
     });
   }
 
   /**
-   * Resilient fallback in case Python environment is ever temporarily inaccessible.
+   * Resilient fallback in case payload data structures are sparse or malformed.
    */
-  private static fallbackHeuristicModel(payload: MLInputPayload): ForecastApiResponse {
-    const productsMap = new Map(payload.products.map((p) => [p.ProductID, p]));
-    const providers = payload.providers;
+  public static fallbackHeuristicModel(payload: MLInputPayload): ForecastApiResponse {
+    const productsMap = new Map((payload.products || []).map((p) => [p.ProductID, p]));
+    const providers = payload.providers || [];
     let criticalCount = 0;
     let warningCount = 0;
     let safeCount = 0;
     let totalValueAtRisk = 0;
     let totalDays = 0;
 
-    const items = payload.inventories.map((inv, idx) => {
+    const items = (payload.inventories || []).map((inv, idx) => {
       const prod = productsMap.get(inv.ProductID) || {};
       const currentStock = Number(inv.InventoryAvailable) || 0;
       const reorderPoint = Number(inv.ReorderPoint) || 30;

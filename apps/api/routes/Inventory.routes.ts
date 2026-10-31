@@ -12,5 +12,7 @@ InventoryRouter.delete(
   verifyToken,
   InventoryController.deleteInventory
 );
+InventoryRouter.post("/fefo-picking", verifyToken, InventoryController.fefoPicking);
+InventoryRouter.get("/fefo-picking", verifyToken, InventoryController.fefoPicking);
 
 export default InventoryRouter;
