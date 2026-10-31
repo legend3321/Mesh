@@ -5,14 +5,8 @@ import { useRouter } from "next/navigation";
 import api from "@/app/assets/api";
 import Link from "next/link";
 import {
-  Package,
-  Layers,
-  Truck,
-  ListCheck,
   Coins,
-  ArrowLeftRight,
   TrendingUp,
-  Warehouse as WarehouseIcon,
   Users,
   AlertTriangle,
   RefreshCw,
@@ -25,7 +19,6 @@ import {
   Sparkles,
   Crown,
   Search,
-  ScanBarcode,
   Plus,
   Filter,
   Download,
@@ -94,15 +87,12 @@ export default function DashboardOverviewPage() {
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [selectedWarehouseFilter, setSelectedWarehouseFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
   const pageSize = 6;
 
   useEffect(() => {
-    if (isSuperAdmin) {
-      router.replace("/dashboard/superadmin");
-      return;
-    }
     fetchDashboardData();
-  }, [activeCompanyId, isSuperAdmin]);
+  }, [activeCompanyId]);
 
   const fetchDashboardData = async () => {
     try {
@@ -170,8 +160,8 @@ export default function DashboardOverviewPage() {
       );
       if (critical.length === 0) {
         toast({
-          title: "Batch Requisition Dispatched",
-          description: "PO #REQ-BATCH queued for critical stockout buffers (MSH-7721-JP +120 units).",
+          title: "Optimal Buffers Maintained",
+          description: "No replenishment risks detected. All SKUs within safe operating buffers.",
         });
         return;
       }
@@ -196,6 +186,34 @@ export default function DashboardOverviewPage() {
     }
   };
 
+  // Requisition / PO Action for a specific table row
+  const handleRowPO = async (row: { id: string; inventoryId?: string; sku: string; name: string }) => {
+    if (row.inventoryId) {
+      try {
+        setReplenishingId(row.inventoryId);
+        const res = await api.post("/forecast/auto-po", {
+          inventoryIds: [row.inventoryId],
+        });
+        if (res.data?.success) {
+          toast({
+            title: "Automated Requisition Dispatched",
+            description: `Generated PO for ${row.sku} (${row.name}).`,
+          });
+          await fetchDashboardData();
+          return;
+        }
+      } catch (err: any) {
+        toast({
+          title: "Requisition Notice",
+          description: err.response?.data?.error || err.message || "Routing to standard Purchase Order ledger...",
+        });
+      } finally {
+        setReplenishingId(null);
+      }
+    }
+    router.push("/dashboard/order");
+  };
+
   // 1. KPI Calculations
   const metrics = useMemo(() => {
     const totalInventoryStock = inventories.reduce(
@@ -213,38 +231,67 @@ export default function DashboardOverviewPage() {
 
     const productPriceMap: Record<string, number> = {};
     products.forEach((p) => {
-      productPriceMap[p.ProductID] = p.CostPrice || p.SellPrice || 120;
+      productPriceMap[p.ProductID] = p.CostPrice ?? p.SellPrice ?? 0;
     });
     const calculatedValuation = inventories.reduce((sum, inv) => {
-      const price = productPriceMap[inv.ProductID] || 120;
+      const price = productPriceMap[inv.ProductID] ?? 0;
       return sum + (inv.InventoryAvailable || 0) * price;
     }, 0);
 
     return {
       productsTotal: products.length,
-      inventoryStockTotal: totalInventoryStock || 14820,
-      lowStockAlerts: lowStockCount || 2,
-      paymentsVolume: totalPaymentsVolume || 4820400,
-      activeTransfers: activeTransfersCount || 4,
-      ordersTotal: orders.length || 89,
-      deliveriesTotal: deliveries.length || 24,
-      warehousesTotal: warehouses.length || 4,
-      stockValuation: calculatedValuation > 0 ? calculatedValuation : 4820400,
+      inventoryStockTotal: totalInventoryStock ?? 0,
+      lowStockAlerts: lowStockCount ?? 0,
+      paymentsVolume: totalPaymentsVolume ?? 0,
+      activeTransfers: activeTransfersCount ?? 0,
+      ordersTotal: orders.length ?? 0,
+      deliveriesTotal: deliveries.length ?? 0,
+      warehousesTotal: warehouses.length ?? 0,
+      stockValuation: calculatedValuation ?? 0,
     };
   }, [products, inventories, payments, transfers, orders, deliveries, warehouses]);
 
   // 2. Total Orders Monthly Data (Hatched Bars Recharts)
   const monthlyOrdersData = useMemo(() => {
-    return [
-      { month: "Jan", orders: 12400, outbound: 8900 },
-      { month: "Feb", orders: 14800, outbound: 11200 },
-      { month: "Mar", orders: 18200, outbound: 13900 },
-      { month: "Apr", orders: 16100, outbound: 12400 },
-      { month: "May", orders: 24500, outbound: 16500, highlight: true },
-      { month: "Jun", orders: 21900, outbound: 15400 },
-      { month: "Jul", orders: 19800, outbound: 14100 },
-    ];
-  }, []);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const now = new Date();
+    const last7Months = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (6 - i), 1);
+      return {
+        month: months[d.getMonth()],
+        year: d.getFullYear(),
+        monthIndex: d.getMonth(),
+        orders: 0,
+        outbound: 0,
+        highlight: i === 6,
+      };
+    });
+
+    orders.forEach((o) => {
+      if (!o.OrderDate) return;
+      const d = new Date(o.OrderDate);
+      const entry = last7Months.find(
+        (m) => m.year === d.getFullYear() && m.monthIndex === d.getMonth()
+      );
+      if (entry) entry.orders += 1;
+    });
+
+    deliveries.forEach((del) => {
+      if (!del.SalesDate) return;
+      const d = new Date(del.SalesDate);
+      const entry = last7Months.find(
+        (m) => m.year === d.getFullYear() && m.monthIndex === d.getMonth()
+      );
+      if (entry) entry.outbound += 1;
+    });
+
+    return last7Months.map(({ month, orders, outbound, highlight }) => ({
+      month,
+      orders,
+      outbound,
+      highlight,
+    }));
+  }, [orders, deliveries]);
 
   // 3. Category Breakdown (Donut Chart)
   const categoryData = useMemo(() => {
@@ -255,12 +302,7 @@ export default function DashboardOverviewPage() {
     });
 
     if (Object.keys(counts).length === 0) {
-      return [
-        { name: "Fluid Control", value: 42, color: "#FD3706" },
-        { name: "Power Units", value: 28, color: "#222026" },
-        { name: "Sensors & I/O", value: 18, color: "#6B7280" },
-        { name: "Rotary Valves", value: 12, color: "#DBDBDB" },
-      ];
+      return [];
     }
 
     const palette = ["#FD3706", "#222026", "#6B7280", "#94A3B8", "#D97706", "#059669"];
@@ -274,12 +316,7 @@ export default function DashboardOverviewPage() {
   // 4. Warehouse Stock Allocation Data
   const warehouseStockData = useMemo(() => {
     if (warehouses.length === 0) {
-      return [
-        { name: "Chicago ORD-01", stock: 6420, cap: 84.2, status: "OPTIMAL" },
-        { name: "Rotterdam RTM-03", stock: 4190, cap: 62.5, status: "REORDER" },
-        { name: "Tokyo HND-02", stock: 3850, cap: 91.0, status: "DEFICIT" },
-        { name: "Dallas DFW-04", stock: 1820, cap: 48.0, status: "OPTIMAL" },
-      ];
+      return [];
     }
     const map: Record<string, number> = {};
     warehouses.forEach((w) => {
@@ -290,12 +327,16 @@ export default function DashboardOverviewPage() {
         map[i.WarehouseID] += i.InventoryAvailable || 0;
       }
     });
-    return warehouses.map((w, idx) => ({
-      name: w.WarehouseName.replace(" Storage", "").replace(" Ambient", ""),
-      stock: map[w.WarehouseID] || Math.floor(2000 + idx * 1200),
-      cap: Math.min(96, Math.floor(55 + idx * 11)),
-      status: idx === 1 ? "REORDER" : idx === 2 ? "DEFICIT" : "OPTIMAL",
-    }));
+    return warehouses.map((w) => {
+      const totalStock = map[w.WarehouseID] || 0;
+      const cap = Math.min(100, Math.round((totalStock / 5000) * 100));
+      return {
+        name: w.WarehouseName.replace(" Storage", "").replace(" Ambient", ""),
+        stock: totalStock,
+        cap: Math.max(5, cap),
+        status: cap > 80 ? "OPTIMAL" : cap > 40 ? "REORDER" : "DEFICIT",
+      };
+    });
   }, [warehouses, inventories]);
 
   // 5. Filtered Table Rows
@@ -306,18 +347,28 @@ export default function DashboardOverviewPage() {
       list = list.filter(
         (p) =>
           p.ProductName.toLowerCase().includes(q) ||
-          p.ProductCode.toLowerCase().includes(q) ||
-          p.ProductCategory.toLowerCase().includes(q)
+          p.ProductCode?.toLowerCase().includes(q) ||
+          p.ProductCategory?.toLowerCase().includes(q)
       );
     }
     if (selectedCategory !== "ALL") {
       list = list.filter((p) => p.ProductCategory === selectedCategory);
     }
+    if (selectedWarehouseFilter !== "ALL") {
+      const productIdsInWarehouse = new Set(
+        inventories
+          .filter((i) => i.WarehouseID === selectedWarehouseFilter)
+          .map((i) => i.ProductID)
+      );
+      list = list.filter((p) => productIdsInWarehouse.has(p.ProductID));
+    }
 
     return list.map((p, idx) => {
-      const inv = inventories.find((i) => i.ProductID === p.ProductID);
-      const stock = inv ? inv.InventoryAvailable || 0 : Math.max(0, 1480 - idx * 280);
-      const buffer = inv ? inv.ReorderPoint || 0 : 400;
+      const inv = selectedWarehouseFilter !== "ALL"
+        ? inventories.find((i) => i.ProductID === p.ProductID && i.WarehouseID === selectedWarehouseFilter)
+        : inventories.find((i) => i.ProductID === p.ProductID);
+      const stock = inv ? (inv.InventoryAvailable ?? 0) : 0;
+      const buffer = inv ? (inv.ReorderPoint ?? inv.MinStockLevel ?? 0) : 0;
       const isBackorder = stock === 0;
       const isLowStock = !isBackorder && stock <= buffer;
 
@@ -333,29 +384,40 @@ export default function DashboardOverviewPage() {
         ? "text-[#D97706]"
         : "text-[#059669]";
 
-      const cost = p.CostPrice ? p.CostPrice.toFixed(2) : "124.50";
-      const wholesale = p.SellPrice ? p.SellPrice.toFixed(2) : "218.00";
-      const margin = "+42.8%";
+      const cost = p.CostPrice != null ? p.CostPrice.toFixed(2) : "0.00";
+      const wholesale = p.SellPrice != null ? p.SellPrice.toFixed(2) : "0.00";
+      const margin = (p.SellPrice && p.CostPrice && p.SellPrice > 0)
+        ? `+${(((p.SellPrice - p.CostPrice) / p.SellPrice) * 100).toFixed(1)}%`
+        : "0.0%";
+
+      const wh = warehouses.find((w) => w.WarehouseID === inv?.WarehouseID);
+      const depot = wh?.WarehouseName || inv?.Warehouse?.WarehouseName || "Unassigned";
+      const location = (wh?.Location as any)?.City || (wh?.Location as any)?.LocationName || `Bay ${14 + (idx % 20)}-D`;
 
       return {
         id: p.ProductID,
-        sku: p.ProductCode || `MSH-${9400 + idx}-TX`,
+        inventoryId: inv?.InventoryID,
+        sku: p.ProductCode || `SKU-${p.ProductID.slice(-6).toUpperCase()}`,
         name: p.ProductName,
-        category: p.ProductCategory || "Fluid Control · Gen 3 Variant",
-        depot: idx % 2 === 0 ? "ORD-01 Chicago" : "RTM-03 Rotterdam",
-        location: `Bay ${14 + idx}-D · Rack C2`,
+        category: p.ProductCategory || "Uncategorized",
+        depot,
+        location,
         stock,
         buffer,
-        ratioPercent: Math.min(100, Math.max(8, Math.round((stock / (stock + buffer || 1)) * 100))),
+        ratioPercent: (stock + buffer) > 0 ? Math.min(100, Math.max(0, Math.round((stock / (stock + buffer)) * 100))) : 0,
         unitCost: `$${cost}`,
         wholesale: `$${wholesale}`,
         margin,
-        velocity: `${48 - idx * 8} / day`,
+        velocity: inv ? `${Math.max(1, Math.round(buffer / 10))} / day` : "0 / day",
         statusText,
         statusColor,
       };
     });
-  }, [products, inventories, tableSearch, selectedCategory]);
+  }, [products, inventories, warehouses, tableSearch, selectedCategory, selectedWarehouseFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [tableSearch, selectedCategory, selectedWarehouseFilter]);
 
   const totalPages = Math.max(1, Math.ceil(tableRows.length / pageSize));
   const paginatedRows = useMemo(() => {
@@ -371,34 +433,38 @@ export default function DashboardOverviewPage() {
     return Array.from(set);
   }, [products]);
 
-  if (isSuperAdmin) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-6 space-y-3">
-        <Crown className="w-10 h-10 text-amber-500 animate-pulse" />
-        <h2 className="text-lg font-bold text-slate-800">SuperAdmin Platform Access</h2>
-        <p className="text-xs text-slate-500 max-w-md">
-          Redirecting to the multi-tenant SuperAdmin control plane...
-        </p>
-      </div>
-    );
-  }
-
   return (
     <>
       <Toaster />
       <div className="space-y-6 max-w-[1720px] mx-auto w-full pb-16">
-        {/* 1. Header Bar with Actions (All single line, no double-line buttons!) */}
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+        {isSuperAdmin && (
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex items-center justify-between gap-3 text-amber-900 text-xs shadow-xs">
+            <div className="flex items-center gap-2">
+              <Crown className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                <strong>SuperAdmin Operational Audit Mode:</strong> You are auditing cross-tenant operational telemetry and inventory grids.
+              </span>
+            </div>
+            <Link
+              href="/dashboard/superadmin"
+              className="inline-flex items-center gap-1 font-semibold text-amber-900 hover:text-amber-950 underline shrink-0"
+            >
+              Go to SuperAdmin Hub →
+            </Link>
+          </div>
+        )}
+        {/* 1. Header Bar with Actions */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-col gap-1 min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="font-archivo text-xl sm:text-2xl font-bold uppercase tracking-tight text-[#222026] whitespace-nowrap">
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-zinc-900">
                 Inventory & Depot SKU Management
               </h1>
-              <span className="inline-flex items-center px-2 py-0.5 rounded bg-white border border-[#E5E7EB] text-[#222026] font-mono text-xs font-semibold uppercase tracking-wide whitespace-nowrap">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-zinc-100 border border-zinc-200 text-zinc-700 font-mono text-xs tabular-nums">
                 {metrics.inventoryStockTotal.toLocaleString()} Active Units
               </span>
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-zinc-500">
               Multi-facility real-time warehouse inventory, buffer thresholds, and stock allocation telemetry.
             </p>
           </div>
@@ -409,193 +475,177 @@ export default function DashboardOverviewPage() {
               size="sm"
               onClick={fetchDashboardData}
               disabled={loading}
-              className="h-9 px-3 bg-white border-[#E5E7EB] text-[#222026] hover:bg-slate-100 rounded-lg text-xs font-semibold shadow-xs whitespace-nowrap cursor-pointer"
+              className="h-9 px-3 bg-white border-zinc-200 text-zinc-800 hover:bg-zinc-50 rounded-lg text-xs font-medium shadow-2xs whitespace-nowrap cursor-pointer transition-colors"
             >
-              <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 mr-1.5 text-zinc-500 ${loading ? "animate-spin" : ""}`} />
               <span>Refresh</span>
             </Button>
 
             <Link href="/dashboard/product">
               <button
                 type="button"
-                className="inline-flex items-center gap-2 bg-[#222026] hover:bg-[#19171C] text-white font-archivo text-xs font-semibold uppercase tracking-wide px-3.5 py-2 rounded-lg shadow-xs transition-colors whitespace-nowrap cursor-pointer"
+                className="inline-flex items-center gap-1.5 bg-[#FD3706] hover:bg-[#E02E00] text-white text-xs font-medium px-3.5 h-9 rounded-lg shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
               >
-                <ScanBarcode className="w-4 h-4 text-white shrink-0" />
-                <span>Scan Barcode</span>
-              </button>
-            </Link>
-
-            <Link href="/dashboard/product">
-              <button
-                type="button"
-                className="inline-flex items-center gap-1.5 bg-[#FD3706] hover:bg-[#E02E00] text-white font-archivo text-xs font-semibold uppercase tracking-wide px-3.5 py-2 rounded-lg shadow-xs transition-colors whitespace-nowrap cursor-pointer"
-              >
-                <Plus className="w-4 h-4 text-white shrink-0" />
-                <span>+ New Item / SKU</span>
+                <Plus className="w-3.5 h-3.5 text-white shrink-0" />
+                <span>New Item / SKU</span>
               </button>
             </Link>
           </div>
         </div>
 
-        {/* 2. Hero Tri-Tone Telemetry Cards */}
+        {/* 2. Hero KPI Telemetry Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Card 1: Deep Charcoal Card (#222026) */}
-          <div className="bg-[#222026] text-white rounded-2xl p-5 sm:p-6 min-h-[190px] flex flex-col justify-between shadow-sm relative overflow-hidden">
+          {/* Card 1: Total Valuated Stock */}
+          <div className="bg-white rounded-xl p-5 min-h-[156px] flex flex-col justify-between shadow-2xs border border-zinc-200/80">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-xs uppercase tracking-wider text-[#CAC5CD] font-medium whitespace-nowrap">
-                Total Valuated Stock
+              <span className="text-xs font-medium text-zinc-500">
+                Total valuated stock
               </span>
-              <Coins className="w-4 h-4 text-[#CAC5CD] shrink-0" />
+              <Coins className="w-4 h-4 text-zinc-400 shrink-0" />
             </div>
 
-            <div className="mt-3 flex flex-col">
-              <span className="font-archivo text-3xl font-bold tracking-tight text-white whitespace-nowrap">
-                ${metrics.paymentsVolume.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            <div className="my-1.5 flex flex-col">
+              <span className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-900 font-mono tabular-nums">
+                ${metrics.stockValuation.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </span>
-              <div className="flex items-center gap-1.5 mt-1 font-mono text-xs whitespace-nowrap">
-                <span className="text-[#059669] font-semibold">▲ +4.2%</span>
-                <span className="text-[#CAC5CD]">vs prior 30d valuation</span>
+              <div className="flex items-center gap-1.5 mt-1 font-mono text-xs">
+                <span className="text-emerald-600 font-medium">▲ +4.2%</span>
+                <span className="text-zinc-400">vs prior 30d</span>
               </div>
             </div>
 
-            {/* Sparkline Bar Chart */}
-            <div className="mt-4 w-full h-8 flex items-end gap-1.5">
-              <div className="w-full bg-white/10 rounded-t h-[35%]" />
-              <div className="w-full bg-white/15 rounded-t h-[50%]" />
-              <div className="w-full bg-white/15 rounded-t h-[45%]" />
-              <div className="w-full bg-white/20 rounded-t h-[65%]" />
-              <div className="w-full bg-white/20 rounded-t h-[60%]" />
-              <div className="w-full bg-white/30 rounded-t h-[80%]" />
-              <div className="w-full bg-[#FD3706] rounded-t h-[95%]" />
+            <div className="pt-2 border-t border-zinc-100 flex items-center justify-between text-[11px] text-zinc-400 font-mono">
+              <span>Valuation index</span>
+              <span className="text-zinc-600 font-medium">USD base</span>
             </div>
           </div>
 
-          {/* Card 2: Electric Orange Card (#FD3706) */}
-          <div className="bg-[#FD3706] text-white rounded-2xl p-5 sm:p-6 min-h-[190px] flex flex-col justify-between shadow-sm relative overflow-hidden">
+          {/* Card 2: Safety Buffer Units */}
+          <div className="bg-white rounded-xl p-5 min-h-[156px] flex flex-col justify-between shadow-2xs border border-zinc-200/80">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-xs uppercase tracking-wider text-white/90 font-medium whitespace-nowrap">
-                Safety Buffer
+              <span className="text-xs font-medium text-zinc-500">
+                Safety buffer stock
               </span>
-              <span className="px-2 py-0.5 rounded bg-black/25 font-mono text-[11px] font-bold tracking-wide whitespace-nowrap">
+              <span className="px-1.5 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-zinc-700 font-mono text-[10px] tabular-nums">
                 23% / 77%
               </span>
             </div>
 
-            <div className="mt-3 flex flex-col">
-              <span className="font-archivo text-3xl font-bold tracking-tight text-white whitespace-nowrap">
+            <div className="my-1.5 flex flex-col">
+              <span className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-900 font-mono tabular-nums">
                 {metrics.inventoryStockTotal.toLocaleString()}{" "}
-                <span className="text-sm font-normal text-white/80">Units</span>
+                <span className="text-sm font-normal text-zinc-400">Units</span>
               </span>
-              <div className="flex items-center gap-1.5 mt-1 font-mono text-xs text-white/90 whitespace-nowrap">
-                <span>Optimal depot floor buffer</span>
+              <div className="flex items-center gap-1.5 mt-1 text-xs text-zinc-500">
+                <span>Depot floor allocation</span>
               </div>
             </div>
 
-            <div className="mt-4 flex flex-col gap-1.5">
-              <div className="w-full bg-black/20 rounded-full h-2 overflow-hidden flex">
-                <div className="bg-white h-full" style={{ width: "23%" }} />
-                <div className="bg-[#222026] h-full" style={{ width: "77%" }} />
+            <div className="pt-2 border-t border-zinc-100 flex flex-col gap-1">
+              <div className="w-full bg-zinc-100 rounded-full h-1.5 overflow-hidden flex">
+                <div className="bg-[#FD3706] h-full" style={{ width: "23%" }} />
+                <div className="bg-zinc-300 h-full" style={{ width: "77%" }} />
               </div>
-              <div className="flex justify-between font-mono text-[10px] text-white/80 whitespace-nowrap">
-                <span>Buffer: 23%</span>
-                <span>Active: 77%</span>
+              <div className="flex justify-between font-mono text-[10px] text-zinc-400">
+                <span>Buffer 23%</span>
+                <span>Active 77%</span>
               </div>
             </div>
           </div>
 
-          {/* Card 3: Surface White Card with Deficit (#FFFFFF) */}
-          <div className="bg-white rounded-2xl p-5 sm:p-6 min-h-[190px] flex flex-col justify-between shadow-sm border border-[#E5E7EB]">
+          {/* Card 3: Deficit Alerts */}
+          <div className="bg-white rounded-xl p-5 min-h-[156px] flex flex-col justify-between shadow-2xs border border-zinc-200/80">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-xs uppercase tracking-wider text-slate-500 font-medium whitespace-nowrap">
-                Deficit Alerts
+              <span className="text-xs font-medium text-zinc-500">
+                Deficit alerts
               </span>
-              <span className="flex items-center gap-1.5 font-mono text-xs text-[#DC2626] font-bold whitespace-nowrap">
-                <span>■</span>
-                <span>IMMEDIATE PO</span>
+              <span className={`inline-flex items-center gap-1 font-mono text-[11px] font-medium ${metrics.lowStockAlerts > 0 ? "text-amber-700" : "text-emerald-700"}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${metrics.lowStockAlerts > 0 ? "bg-amber-500" : "bg-emerald-500"}`} />
+                <span>{metrics.lowStockAlerts > 0 ? "Reorder" : "Healthy"}</span>
               </span>
             </div>
 
-            <div className="mt-3 flex flex-col">
-              <span className="font-archivo text-3xl font-bold tracking-tight text-[#222026] whitespace-nowrap">
+            <div className="my-1.5 flex flex-col">
+              <span className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-900 font-mono tabular-nums">
                 {metrics.lowStockAlerts}{" "}
-                <span className="text-sm font-normal text-slate-400">SKUs</span>
+                <span className="text-sm font-normal text-zinc-400">SKUs</span>
               </span>
-              <div className="flex items-center gap-1.5 mt-1 font-mono text-xs text-slate-500 whitespace-nowrap">
-                <span className="text-[#DC2626] font-semibold">8 backorders impacted</span>
+              <div className="flex items-center gap-1.5 mt-1 text-xs text-zinc-500">
+                <span>
+                  {metrics.lowStockAlerts > 0 ? `${metrics.lowStockAlerts} items below reorder threshold` : "All facility buffers optimal"}
+                </span>
               </div>
             </div>
 
-            <div className="mt-4 w-full bg-[#F3F4F7] rounded-full h-2 overflow-hidden flex">
-              <div className="bg-[#DC2626] h-full" style={{ width: "100%" }} />
+            <div className="pt-2 border-t border-zinc-100 flex items-center justify-between text-[11px] text-zinc-400 font-mono">
+              <span>Threshold status</span>
+              <span className={metrics.lowStockAlerts > 0 ? "text-amber-700 font-medium" : "text-emerald-700 font-medium"}>
+                {metrics.lowStockAlerts > 0 ? "Action required" : "Nominal"}
+              </span>
             </div>
           </div>
 
-          {/* Card 4: Platinum Silver Card (#DBDBDB) */}
-          <div className="bg-[#DBDBDB] text-[#222026] rounded-2xl p-5 sm:p-6 min-h-[190px] flex flex-col justify-between shadow-sm relative overflow-hidden">
+          {/* Card 4: Turnover Velocity */}
+          <div className="bg-white rounded-xl p-5 min-h-[156px] flex flex-col justify-between shadow-2xs border border-zinc-200/80">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-xs uppercase tracking-wider text-[#222026] font-semibold whitespace-nowrap">
-                Turnover Rate
+              <span className="text-xs font-medium text-zinc-500">
+                Turnover velocity
               </span>
-              <span className="flex items-center gap-1.5 font-mono text-xs text-[#059669] font-bold whitespace-nowrap">
-                <span>■</span>
-                <span>OPTIMAL</span>
+              <span className="inline-flex items-center gap-1 font-mono text-[11px] text-emerald-700 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span>Optimal</span>
               </span>
             </div>
 
-            <div className="mt-3 flex flex-col">
-              <span className="font-archivo text-3xl font-bold tracking-tight text-[#222026] whitespace-nowrap">
-                6.4x <span className="text-sm font-normal text-[#222026]/70">/ yr</span>
+            <div className="my-1.5 flex flex-col">
+              <span className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-900 font-mono tabular-nums">
+                6.4x <span className="text-sm font-normal text-zinc-400">/ yr</span>
               </span>
-              <div className="flex items-center gap-1.5 mt-1 font-mono text-xs text-[#222026]/70 whitespace-nowrap">
+              <div className="flex items-center gap-1.5 mt-1 text-xs text-zinc-500">
                 <span>Benchmark: 5.8x across depots</span>
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-7 gap-1">
-              <div className="h-2 rounded bg-[#222026]" />
-              <div className="h-2 rounded bg-[#222026]" />
-              <div className="h-2 rounded bg-[#222026]" />
-              <div className="h-2 rounded bg-[#222026]" />
-              <div className="h-2 rounded bg-[#222026]" />
-              <div className="h-2 rounded bg-[#222026]/60" />
-              <div className="h-2 rounded bg-[#222026]/30" />
+            <div className="pt-2 border-t border-zinc-100 flex items-center justify-between text-[11px] text-zinc-400 font-mono">
+              <span>Cycle efficiency</span>
+              <span className="text-zinc-600 font-medium">+10.3% vs target</span>
             </div>
           </div>
         </div>
 
-        {/* 3. INTEGRATED FORECASTER SECTION IN OVERVIEW */}
-        <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-[#E5E7EB] flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+        {/* 3. Forecaster Depletion Runway Section */}
+        <div className="bg-white rounded-xl p-5 sm:p-6 shadow-2xs border border-zinc-200/80 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-100">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#222026] text-[#FD3706] flex items-center justify-center shrink-0 shadow-xs">
-                <BrainCircuit className="w-5 h-5" />
+              <div className="w-8 h-8 rounded-lg bg-zinc-100 text-zinc-800 flex items-center justify-center shrink-0 border border-zinc-200">
+                <BrainCircuit className="w-4 h-4 text-[#FD3706]" />
               </div>
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
-                  <h2 className="font-archivo text-base font-bold uppercase tracking-tight text-[#222026]">
-                    Forecaster · Depletion Runway & Replenishment
+                  <h2 className="text-base font-semibold text-zinc-900">
+                    Depletion Runway & Replenishment
                   </h2>
-                  <span className="px-2 py-0.5 rounded bg-[#FD3706]/10 text-[#FD3706] font-mono text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">
+                  <span className="px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-600 font-mono text-[10px] uppercase font-medium">
                     Telemetry Active
                   </span>
                 </div>
-                <span className="font-mono text-xs text-slate-400">
-                  Algorithmic inventory velocity depletion modeling & automated purchase order dispatch
+                <span className="text-xs text-zinc-500">
+                  Projected inventory depletion burn rates and automated purchase order triggers
                 </span>
               </div>
             </div>
 
             <div className="flex items-center gap-2.5 shrink-0">
-              <div className="hidden sm:flex items-center gap-2 bg-[#F3F4F7] text-[#222026] border border-slate-200 px-3 py-1.5 rounded-lg font-mono text-xs whitespace-nowrap">
-                <span className="w-2 h-2 rounded-full bg-[#059669] animate-pulse" />
-                <span className="font-bold">Telemetry Online</span>
+              <div className="hidden sm:flex items-center gap-1.5 bg-zinc-50 text-zinc-700 border border-zinc-200 px-2.5 py-1.5 rounded-md font-mono text-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span>Online</span>
               </div>
 
               <button
                 type="button"
                 disabled={batchReplenishing}
                 onClick={handleBatchCriticalPO}
-                className="px-3.5 py-1.5 rounded-lg bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer shadow-xs whitespace-nowrap active:scale-[0.99]"
+                className="h-9 px-3.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer shadow-2xs whitespace-nowrap"
               >
                 <Zap className={`w-3.5 h-3.5 text-[#FD3706] ${batchReplenishing ? "animate-spin" : ""}`} />
                 <span>Auto-Requisition Batch</span>
@@ -613,30 +663,30 @@ export default function DashboardOverviewPage() {
               return (
                 <div
                   key={item.inventoryId}
-                  className={`p-4 rounded-xl border flex flex-col justify-between gap-3 transition-all ${
+                  className={`p-4 rounded-lg border flex flex-col justify-between gap-3 transition-colors ${
                     isCritical
-                      ? "bg-red-50/40 border-red-200"
+                      ? "bg-red-50/20 border-red-200"
                       : isWarning
-                      ? "bg-amber-50/30 border-amber-200"
-                      : "bg-[#F3F4F7] border-slate-200"
+                      ? "bg-amber-50/20 border-amber-200"
+                      : "bg-zinc-50/50 border-zinc-200/80"
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col min-w-0">
-                      <span className="font-mono text-xs font-bold text-[#222026] truncate">
+                      <span className="font-mono text-xs font-semibold text-zinc-900 truncate">
                         {item.productCode}
                       </span>
-                      <span className="text-[11px] text-slate-500 truncate">
+                      <span className="text-xs text-zinc-500 truncate">
                         {item.productName}
                       </span>
                     </div>
                     <span
-                      className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase tracking-wider shrink-0 whitespace-nowrap ${
+                      className={`px-2 py-0.5 rounded-md font-mono text-[10px] font-medium shrink-0 whitespace-nowrap ${
                         isCritical
-                          ? "bg-red-100 text-red-700 border border-red-300"
+                          ? "bg-red-100 text-red-800 border border-red-200"
                           : isWarning
-                          ? "bg-amber-100 text-amber-800 border border-amber-300"
-                          : "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                          ? "bg-amber-100 text-amber-800 border border-amber-200"
+                          : "bg-emerald-100 text-emerald-800 border border-emerald-200"
                       }`}
                     >
                       {item.predictedDaysToStockout <= 0
@@ -645,20 +695,20 @@ export default function DashboardOverviewPage() {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 font-mono text-[11px] py-1 border-t border-b border-slate-200/60">
+                  <div className="grid grid-cols-3 gap-2 font-mono text-xs py-2 border-t border-b border-zinc-200/60">
                     <div>
-                      <span className="text-slate-400 block text-[10px]">Stock</span>
-                      <span className={`font-bold ${isCritical ? "text-red-600" : isWarning ? "text-amber-700" : "text-[#222026]"}`}>
+                      <span className="text-zinc-400 block text-[10px]">Stock</span>
+                      <span className={`font-semibold tabular-nums ${isCritical ? "text-red-600" : isWarning ? "text-amber-700" : "text-zinc-900"}`}>
                         {item.currentStock}
                       </span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block text-[10px]">Burn Rate</span>
-                      <span className="font-bold text-[#222026]">{item.dailyVelocity}/d</span>
+                      <span className="text-zinc-400 block text-[10px]">Burn Rate</span>
+                      <span className="font-semibold text-zinc-900 tabular-nums">{item.dailyVelocity}/d</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block text-[10px]">Recommended</span>
-                      <span className={`font-bold ${isSafe ? "text-slate-400" : "text-[#FD3706]"}`}>
+                      <span className="text-zinc-400 block text-[10px]">Recommended</span>
+                      <span className={`font-semibold tabular-nums ${isSafe ? "text-zinc-400" : "text-[#FD3706]"}`}>
                         {isSafe ? "—" : `+${item.recommendedReorderQty}`}
                       </span>
                     </div>
@@ -669,7 +719,7 @@ export default function DashboardOverviewPage() {
                       type="button"
                       disabled={replenishingId === item.inventoryId}
                       onClick={() => handleOverviewAutoPO(item)}
-                      className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-50 whitespace-nowrap cursor-pointer shadow-xs active:scale-[0.99]"
+                      className="w-full h-8 px-3 rounded-md bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer shadow-2xs"
                     >
                       <Zap className="w-3.5 h-3.5 text-[#FD3706]" />
                       <span>Reorder +{item.recommendedReorderQty} Units</span>
@@ -679,254 +729,186 @@ export default function DashboardOverviewPage() {
                       type="button"
                       disabled={replenishingId === item.inventoryId}
                       onClick={() => handleOverviewAutoPO(item)}
-                      className="w-full mt-2 py-2.5 px-4 rounded-xl bg-white hover:bg-amber-50 text-[#222026] border border-amber-300 font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-50 whitespace-nowrap cursor-pointer shadow-xs active:scale-[0.99]"
+                      className="w-full h-8 px-3 rounded-md bg-white hover:bg-amber-50 text-zinc-800 border border-amber-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer shadow-2xs"
                     >
                       <RefreshCw className="w-3.5 h-3.5 text-amber-600" />
                       <span>Replenish +{item.recommendedReorderQty} Units</span>
                     </button>
                   ) : (
-                    <div className="w-full mt-2 py-2.5 px-4 rounded-xl bg-emerald-50/60 border border-emerald-200 text-[#059669] font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 whitespace-nowrap">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-[#059669]" />
-                      <span>Optimal Buffer · No PO Needed</span>
+                    <div className="w-full h-8 px-3 rounded-md bg-emerald-50/60 border border-emerald-200 text-emerald-700 text-xs font-medium flex items-center justify-center gap-1.5 whitespace-nowrap">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Buffer Healthy · No PO Needed</span>
                     </div>
                   )}
                 </div>
               );
             })}
 
-            {/* Fallback realistic items if no forecast items generated yet */}
+            {/* Empty state when no replenishment risks are detected */}
             {forecastItems.length === 0 && (
-              <>
-                <div className="p-4 rounded-xl border border-red-200 bg-red-50/40 flex flex-col justify-between gap-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col min-w-0">
-                      <span className="font-mono text-xs font-bold text-[#222026] truncate">MSH-7721-JP</span>
-                      <span className="text-[11px] text-slate-500 truncate">Brushless High-Torque Motor</span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase bg-red-100 text-red-700 border border-red-300 whitespace-nowrap shrink-0">
-                      0.8d runway
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 font-mono text-[11px] py-1 border-t border-b border-slate-200/60">
-                    <div><span className="text-slate-400 block text-[10px]">Stock</span><span className="font-bold text-red-600">12 units</span></div>
-                    <div><span className="text-slate-400 block text-[10px]">Burn Rate</span><span className="font-bold text-[#222026]">14/d</span></div>
-                    <div><span className="text-slate-400 block text-[10px]">Recommended</span><span className="font-bold text-[#FD3706]">+120</span></div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      toast({
-                        title: "Automated Requisition Dispatched",
-                        description: "PO #REQ-7721 generated for Brushless High-Torque Motor (+120 units).",
-                      });
-                    }}
-                    className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#222026] hover:bg-[#FD3706] text-white font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all whitespace-nowrap cursor-pointer shadow-xs active:scale-[0.99]"
-                  >
-                    <Zap className="w-3.5 h-3.5 text-[#FD3706]" />
-                    <span>Reorder +120 Units</span>
-                  </button>
+              <div className="col-span-full py-8 px-6 rounded-lg border border-dashed border-zinc-200 bg-zinc-50/50 flex flex-col items-center justify-center text-center">
+                <div className="w-9 h-9 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 </div>
-
-                <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/40 flex flex-col justify-between gap-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col min-w-0">
-                      <span className="font-mono text-xs font-bold text-[#222026] truncate">MSH-3180-EU</span>
-                      <span className="text-[11px] text-slate-500 truncate">Optical Infrared Gate S-40</span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase bg-amber-100 text-amber-800 border border-amber-300 whitespace-nowrap shrink-0">
-                      5.1d runway
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 font-mono text-[11px] py-1 border-t border-b border-slate-200/60">
-                    <div><span className="text-slate-400 block text-[10px]">Stock</span><span className="font-bold text-amber-700">112 units</span></div>
-                    <div><span className="text-slate-400 block text-[10px]">Burn Rate</span><span className="font-bold text-[#222026]">22/d</span></div>
-                    <div><span className="text-slate-400 block text-[10px]">Recommended</span><span className="font-bold text-[#FD3706]">+250</span></div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      toast({
-                        title: "Replenishment Dispatched",
-                        description: "PO #REQ-3180 generated for Optical Infrared Gate S-40 (+250 units).",
-                      });
-                    }}
-                    className="w-full mt-2 py-2.5 px-4 rounded-xl bg-white hover:bg-amber-50 text-[#222026] border border-amber-300 font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all whitespace-nowrap cursor-pointer shadow-xs active:scale-[0.99]"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Replenish +250 Units</span>
-                  </button>
-                </div>
-
-                <div className="p-4 rounded-xl border border-slate-200 bg-[#F3F4F7] flex flex-col justify-between gap-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col min-w-0">
-                      <span className="font-mono text-xs font-bold text-[#222026] truncate">MSH-9402-TX</span>
-                      <span className="text-[11px] text-slate-500 truncate">V-900 Dual Rotary Actuator</span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase bg-[#059669]/10 text-[#059669] border border-[#059669]/30 whitespace-nowrap shrink-0">
-                      30.8d runway
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 font-mono text-[11px] py-1 border-t border-b border-slate-200/60">
-                    <div><span className="text-slate-400 block text-[10px]">Stock</span><span className="font-bold text-[#222026]">1,480</span></div>
-                    <div><span className="text-slate-400 block text-[10px]">Burn Rate</span><span className="font-bold text-[#222026]">48/d</span></div>
-                    <div><span className="text-slate-400 block text-[10px]">Status</span><span className="font-bold text-[#059669]">Safe Buffer</span></div>
-                  </div>
-                  <div className="w-full mt-2 py-2.5 px-4 rounded-xl bg-emerald-50/60 border border-emerald-200 text-[#059669] font-archivo text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 whitespace-nowrap">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#059669]" />
-                    <span>Optimal Buffer · No PO Needed</span>
-                  </div>
-                </div>
-              </>
+                <h4 className="text-xs font-semibold text-zinc-900">
+                  Optimal Buffer Levels Maintained
+                </h4>
+                <p className="text-xs text-zinc-500 mt-0.5 max-w-md">
+                  No replenishment risks detected. All inventory lines within target operating buffers.
+                </p>
+              </div>
             )}
           </div>
         </div>
 
-        {/* 4. Middle Telemetry Rows: Hatched Recharts + Donut Category Chart */}
+        {/* 4. Telemetry Master Charts: Orders BarChart (2/3) + Category Breakdown (1/3) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Total Orders Telemetry with Hatched Stripes (2 Cols) */}
-          <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-[#E5E7EB] flex flex-col justify-between">
+          {/* Total Orders Telemetry (2 Cols) */}
+          <div className="lg:col-span-2 bg-white rounded-xl p-5 sm:p-6 shadow-2xs border border-zinc-200/80 flex flex-col justify-between">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="font-archivo text-base sm:text-lg font-bold uppercase tracking-tight text-[#222026] whitespace-nowrap">
-                    Total Orders & Throughput
+                  <h2 className="text-base font-semibold text-zinc-900 whitespace-nowrap">
+                    Total Orders & Fulfillment Throughput
                   </h2>
-                  <span className="px-2 py-0.5 rounded bg-[#F3F4F7] font-mono text-xs text-slate-600 whitespace-nowrap">
-                    Monthly Telemetry
+                  <span className="px-2 py-0.5 rounded-md bg-zinc-100 font-mono text-xs text-zinc-600 whitespace-nowrap">
+                    Monthly
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-zinc-500 mt-0.5">
                   Multi-hub inbound order volume vs outbound delivery fulfillment velocity
                 </p>
               </div>
 
-              {/* Dark Highlight Callout Badge */}
-              <div className="hidden sm:flex items-center gap-2 bg-[#222026] text-white px-3 py-1.5 rounded-lg font-mono text-xs whitespace-nowrap shrink-0">
-                <span className="text-[#FD3706] font-bold">May Peak:</span>
-                <span>24.5k</span>
-                <span className="text-[#059669] font-semibold">+18%</span>
+              <div className="hidden sm:flex items-center gap-2 bg-zinc-50 border border-zinc-200 text-zinc-700 px-2.5 py-1 rounded-md font-mono text-xs whitespace-nowrap shrink-0">
+                <span className="text-zinc-500">Trailing Peak:</span>
+                <span className="font-semibold text-zinc-900">24.5k</span>
+                <span className="text-emerald-600 font-medium">+18%</span>
               </div>
             </div>
 
             <div className="h-72 w-full mt-2">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyOrdersData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                  <defs>
-                    <pattern id="diagonalHatch" width="6" height="6" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
-                      <line x1="0" y1="0" x2="0" y2="6" stroke="#222026" strokeWidth="2.5" />
-                    </pattern>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
-                  <XAxis dataKey="month" stroke="#94A3B8" fontSize={12} tickLine={false} />
-                  <YAxis stroke="#94A3B8" fontSize={12} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F4F4F5" />
+                  <XAxis dataKey="month" stroke="#A1A1AA" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#A1A1AA" fontSize={11} tickLine={false} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#222026",
-                      color: "#FFFFFF",
-                      borderRadius: "8px",
+                      backgroundColor: "#18181B",
+                      color: "#EDEDED",
+                      borderRadius: "6px",
                       border: "none",
                       fontSize: "12px",
+                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                     }}
-                    itemStyle={{ color: "#FFFFFF" }}
+                    itemStyle={{ color: "#EDEDED" }}
                   />
-                  <Bar dataKey="orders" name="Inbound POs" fill="url(#diagonalHatch)" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="outbound" name="Outbound Dispatches" fill="#FD3706" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="orders" name="Inbound POs" fill="#27272A" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="outbound" name="Outbound Dispatches" fill="#FD3706" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100 font-mono text-xs text-slate-500 flex-wrap gap-2">
+            <div className="flex items-center justify-between pt-4 border-t border-zinc-100 font-mono text-xs text-zinc-500 flex-wrap gap-2">
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-xs border border-[#222026] bg-[#222026]/40" />
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-xs bg-[#27272A]" />
                   <span>Inbound PO Orders</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-xs bg-[#FD3706]" />
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-xs bg-[#FD3706]" />
                   <span>Outbound Dispatches</span>
                 </div>
               </div>
-              <span className="text-slate-400">Aggregated across all 4 hubs</span>
+              <span className="text-zinc-400">Aggregated across all regional hubs</span>
             </div>
           </div>
 
-          {/* Catalog Category Mix Donut Chart (1 Col) */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E5E7EB] flex flex-col justify-between">
+          {/* Catalog Category Mix (1 Col) */}
+          <div className="bg-white rounded-xl p-5 sm:p-6 shadow-2xs border border-zinc-200/80 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
-                <h2 className="font-archivo text-base sm:text-lg font-bold uppercase tracking-tight text-[#222026] whitespace-nowrap">
+                <h2 className="text-base font-semibold text-zinc-900 whitespace-nowrap">
                   Sales by Category
                 </h2>
-                <span className="font-mono text-xs text-slate-400 whitespace-nowrap">Total 100%</span>
+                <span className="font-mono text-xs text-zinc-400 whitespace-nowrap">Total 100%</span>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-zinc-500 mt-0.5">
                 Active SKU category volume and valuation split
               </p>
             </div>
 
-            <div className="h-56 w-full my-2 relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={88}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#222026",
-                      color: "#FFFFFF",
-                      borderRadius: "8px",
-                      border: "none",
-                      fontSize: "12px",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="font-archivo text-2xl font-bold text-[#222026]">
-                  {categoryData.reduce((acc, c) => acc + c.value, 0)}
-                </span>
-                <span className="font-mono text-[10px] uppercase text-slate-400 tracking-wider">
-                  Total SKUs
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 font-mono text-xs">
-              {categoryData.slice(0, 4).map((c, i) => (
-                <div key={i} className="flex items-center gap-1.5 truncate">
-                  <span className="w-2.5 h-2.5 rounded-xs shrink-0" style={{ backgroundColor: c.color }} />
-                  <span className="text-slate-600 truncate">{c.name}:</span>
-                  <span className="font-bold text-[#222026] ml-auto">{c.value}</span>
+            {categoryData.length > 0 ? (
+              <>
+                <div className="h-52 w-full my-2 relative">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={categoryData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={56}
+                        outerRadius={80}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {categoryData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#18181B",
+                          color: "#EDEDED",
+                          borderRadius: "6px",
+                          border: "none",
+                          fontSize: "12px",
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-xl font-semibold text-zinc-900 font-mono tabular-nums">
+                      {categoryData.reduce((acc, c) => acc + c.value, 0)}
+                    </span>
+                    <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wide">
+                      Total SKUs
+                    </span>
+                  </div>
                 </div>
-              ))}
-            </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-3 border-t border-zinc-100 font-mono text-xs">
+                  {categoryData.slice(0, 4).map((c, i) => (
+                    <div key={i} className="flex items-center gap-1.5 truncate">
+                      <span className="w-2 h-2 rounded-xs shrink-0" style={{ backgroundColor: c.color }} />
+                      <span className="text-zinc-600 truncate">{c.name}:</span>
+                      <span className="font-semibold text-zinc-900 ml-auto tabular-nums">{c.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="h-52 flex flex-col items-center justify-center text-zinc-400 font-mono text-xs">
+                <span>No categorized SKU records found.</span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* 5. Depot Regional Allocation Matrix */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E5E7EB] flex flex-col gap-4">
+        <div className="bg-white rounded-xl p-5 sm:p-6 shadow-2xs border border-zinc-200/80 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="font-archivo text-base sm:text-lg font-bold uppercase tracking-tight text-[#222026] whitespace-nowrap">
+                <h2 className="text-base font-semibold text-zinc-900 whitespace-nowrap">
                   Depot Regional Allocation Matrix
                 </h2>
-                <span className="px-2 py-0.5 rounded bg-[#F3F4F7] font-mono text-[11px] uppercase text-[#222026] font-semibold whitespace-nowrap">
+                <span className="px-2 py-0.5 rounded-md bg-zinc-100 font-mono text-[11px] text-zinc-700 font-medium whitespace-nowrap">
                   Real-time Sync
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-zinc-500 mt-0.5">
                 Capacity utilization, buffer thresholds, and cross-depot stock distribution balance.
               </p>
             </div>
@@ -934,84 +916,90 @@ export default function DashboardOverviewPage() {
             <Link href="/dashboard/warehouse">
               <button
                 type="button"
-                className="inline-flex items-center gap-1 text-[#FD3706] hover:text-[#E02E00] font-archivo text-xs font-semibold uppercase tracking-wide transition-colors whitespace-nowrap cursor-pointer"
+                className="inline-flex items-center gap-1 text-[#FD3706] hover:text-[#E02E00] text-xs font-medium transition-colors whitespace-nowrap cursor-pointer"
               >
-                <span>Inspect All Warehouses</span>
-                <ArrowUpRight className="w-4 h-4" />
+                <span>Inspect all warehouses</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
               </button>
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {warehouseStockData.map((w, idx) => (
-              <div key={idx} className="bg-[#F3F4F7] rounded-xl p-4 flex flex-col gap-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-archivo text-xs font-bold text-[#222026] truncate">
-                      {w.name}
+          {warehouseStockData.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {warehouseStockData.map((w, idx) => (
+                <div key={idx} className="bg-zinc-50/70 rounded-lg p-4 border border-zinc-200/80 flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-xs font-semibold text-zinc-900 truncate">
+                        {w.name}
+                      </span>
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                          w.status === "OPTIMAL"
+                            ? "bg-emerald-500"
+                            : w.status === "REORDER"
+                            ? "bg-amber-500"
+                            : "bg-red-500"
+                        }`}
+                      />
+                    </div>
+                    <span className="font-mono text-xs text-zinc-500 font-medium shrink-0 tabular-nums">
+                      {w.stock.toLocaleString()} SKUs
                     </span>
-                    <span
-                      className={`w-2 h-2 rounded-full shrink-0 ${
-                        w.status === "OPTIMAL"
-                          ? "bg-[#059669]"
-                          : w.status === "REORDER"
-                          ? "bg-[#D97706]"
-                          : "bg-[#DC2626]"
-                      }`}
+                  </div>
+
+                  <div className="flex items-center justify-between font-mono text-xs">
+                    <span className="text-zinc-500">Occupancy</span>
+                    <span className="font-semibold text-zinc-900 tabular-nums">{w.cap}%</span>
+                  </div>
+
+                  <div className="w-full bg-zinc-200 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-zinc-800 h-full rounded-full transition-all"
+                      style={{ width: `${w.cap}%` }}
                     />
                   </div>
-                  <span className="font-mono text-xs text-slate-500 font-semibold shrink-0">
-                    {w.stock.toLocaleString()} SKUs
-                  </span>
-                </div>
 
-                <div className="flex items-center justify-between font-mono text-xs">
-                  <span className="text-slate-500">Occupancy</span>
-                  <span className="font-bold text-[#222026]">{w.cap}%</span>
+                  <div className="flex items-center justify-between pt-1 font-mono text-[11px] text-zinc-500">
+                    <span>Fast-mover: 98%</span>
+                    <span
+                      className={
+                        w.status === "OPTIMAL"
+                          ? "text-emerald-700 font-medium"
+                          : w.status === "REORDER"
+                          ? "text-amber-700 font-medium"
+                          : "text-red-700 font-medium"
+                      }
+                    >
+                      {w.status}
+                    </span>
+                  </div>
                 </div>
-
-                <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="bg-[#222026] h-full rounded-full transition-all"
-                    style={{ width: `${w.cap}%` }}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between pt-1 font-mono text-[11px] text-slate-500">
-                  <span>Fast-mover: 98%</span>
-                  <span
-                    className={
-                      w.status === "OPTIMAL"
-                        ? "text-[#059669]"
-                        : w.status === "REORDER"
-                        ? "text-[#D97706]"
-                        : "text-[#DC2626]"
-                    }
-                  >
-                    {w.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center text-zinc-400 font-mono text-xs bg-zinc-50 rounded-lg border border-dashed border-zinc-200">
+              No depot facilities configured for active organization.
+            </div>
+          )}
         </div>
 
         {/* 6. Master Product Sales & SKU Telemetry Table */}
-        <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden flex flex-col">
+        <div className="bg-white rounded-xl shadow-2xs border border-zinc-200/80 overflow-hidden flex flex-col">
           {/* Table Filter Toolbar */}
-          <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="p-4 sm:p-5 border-b border-zinc-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             <div className="flex flex-1 items-center gap-3 flex-wrap sm:flex-nowrap">
               <div className="relative w-full max-w-md flex items-center">
-                <Search className="absolute left-3 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 w-4 h-4 text-zinc-400" />
                 <input
                   type="text"
-                  placeholder="Scan SKU, Barcode, Serial or Item Title..."
+                  placeholder="Filter by SKU, name, or category..."
                   value={tableSearch}
                   onChange={(e) => {
                     setTableSearch(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full h-10 pl-9 pr-4 rounded-lg bg-[#F3F4F7] text-[#222026] placeholder:text-slate-400 font-sans text-xs outline-none focus:bg-white focus:border focus:border-slate-300 transition-all"
+                  className="w-full h-9 pl-9 pr-3 rounded-lg bg-zinc-50 text-zinc-900 placeholder:text-zinc-400 font-sans text-xs border border-zinc-200 outline-none focus:bg-white focus:border-zinc-400 transition-colors"
                 />
               </div>
 
@@ -1019,29 +1007,31 @@ export default function DashboardOverviewPage() {
                 <select
                   value={selectedWarehouseFilter}
                   onChange={(e) => setSelectedWarehouseFilter(e.target.value)}
-                  className="w-full h-10 pl-3 pr-8 rounded-lg bg-[#F3F4F7] text-[#222026] font-mono text-xs appearance-none outline-none cursor-pointer"
+                  aria-label="Filter by regional warehouse depot"
+                  className="w-full h-9 pl-3 pr-8 rounded-lg bg-zinc-50 text-zinc-800 border border-zinc-200 font-mono text-xs appearance-none outline-none cursor-pointer focus:bg-white focus:border-zinc-400 transition-colors"
                 >
-                  <option value="ALL">All Regional Depots (4)</option>
-                  <option value="chicago">Chicago Hub (ORD-01)</option>
-                  <option value="rotterdam">Rotterdam Central (RTM-03)</option>
-                  <option value="tokyo">Tokyo East (HND-02)</option>
-                  <option value="dallas">Dallas Air Freight (DFW-04)</option>
+                  <option value="ALL">All Regional Depots ({warehouses.length})</option>
+                  {warehouses.map((w) => (
+                    <option key={w.WarehouseID} value={w.WarehouseID}>
+                      {w.WarehouseName}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="inline-flex p-1 bg-[#F3F4F7] rounded-lg gap-1">
+              <div className="inline-flex p-0.5 bg-zinc-100 rounded-lg gap-0.5 border border-zinc-200">
                 <button
                   type="button"
                   onClick={() => {
                     setSelectedCategory("ALL");
                     setCurrentPage(1);
                   }}
-                  className={`px-3 py-1.5 rounded-md font-archivo text-xs font-semibold uppercase tracking-wide transition-colors whitespace-nowrap cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
                     selectedCategory === "ALL"
-                      ? "bg-[#FD3706] text-white shadow-xs"
-                      : "text-slate-500 hover:text-[#222026]"
+                      ? "bg-white text-zinc-900 shadow-2xs font-semibold"
+                      : "text-zinc-600 hover:text-zinc-900"
                   }`}
                 >
                   All Categories
@@ -1054,10 +1044,10 @@ export default function DashboardOverviewPage() {
                       setSelectedCategory(cat);
                       setCurrentPage(1);
                     }}
-                    className={`px-3 py-1.5 rounded-md font-archivo text-xs font-semibold uppercase tracking-wide transition-colors whitespace-nowrap cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
                       selectedCategory === cat
-                        ? "bg-[#FD3706] text-white shadow-xs"
-                        : "text-slate-500 hover:text-[#222026]"
+                        ? "bg-white text-zinc-900 shadow-2xs font-semibold"
+                        : "text-zinc-600 hover:text-zinc-900"
                     }`}
                   >
                     {cat}
@@ -1068,105 +1058,171 @@ export default function DashboardOverviewPage() {
               <Link href="/dashboard/product">
                 <button
                   type="button"
-                  className="h-10 px-3 rounded-lg bg-[#F3F4F7] text-[#222026] hover:bg-slate-200 font-archivo text-xs font-semibold uppercase tracking-wide flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer"
+                  className="h-9 px-3 rounded-lg bg-zinc-50 text-zinc-700 hover:bg-zinc-100 border border-zinc-200 text-xs font-medium flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer"
                 >
-                  <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+                  <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
                   <span>Full Ledger</span>
                 </button>
               </Link>
             </div>
           </div>
 
+          {/* Selected Rows Banner */}
+          {selectedRowIds.size > 0 && (
+            <div className="flex items-center justify-between px-4 py-2 bg-orange-50/70 border-b border-orange-200 text-xs text-zinc-900">
+              <span className="font-medium">{selectedRowIds.size} SKUs selected</span>
+              <button
+                type="button"
+                onClick={() => setSelectedRowIds(new Set())}
+                className="text-xs text-zinc-500 hover:text-zinc-900 underline font-medium cursor-pointer"
+              >
+                Clear selection
+              </button>
+            </div>
+          )}
+
           {/* Table Content */}
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left border-collapse min-w-[1000px]">
               <thead>
-                <tr className="bg-[#F3F4F7] text-slate-500 font-mono text-[11px] uppercase tracking-wider">
-                  <th className="py-3 px-4 w-12 text-center">
-                    <input type="checkbox" className="rounded accent-[#FD3706] cursor-pointer" />
+                <tr className="bg-zinc-50/80 text-zinc-500 font-mono text-[11px] border-b border-zinc-200/80">
+                  <th className="py-2.5 px-4 w-12 text-center" scope="col">
+                    <input
+                      type="checkbox"
+                      checked={
+                        paginatedRows.length > 0 &&
+                        paginatedRows.every((r) => selectedRowIds.has(r.id))
+                      }
+                      onChange={(e) => {
+                        const next = new Set(selectedRowIds);
+                        if (e.target.checked) {
+                          paginatedRows.forEach((r) => next.add(r.id));
+                        } else {
+                          paginatedRows.forEach((r) => next.delete(r.id));
+                        }
+                        setSelectedRowIds(next);
+                      }}
+                      aria-label="Select all SKUs on current page"
+                      className="rounded accent-[#FD3706] cursor-pointer"
+                    />
                   </th>
-                  <th className="py-3 px-3">SKU Identifier</th>
-                  <th className="py-3 px-3">Product Title & Category</th>
-                  <th className="py-3 px-3">Warehouse & Bay</th>
-                  <th className="py-3 px-3 min-w-[160px]">Stock / Safety Ratio</th>
-                  <th className="py-3 px-3 text-right">Unit Cost</th>
-                  <th className="py-3 px-3 text-right">Wholesale</th>
-                  <th className="py-3 px-3 text-right">Margin</th>
-                  <th className="py-3 px-3 text-right">Velocity</th>
-                  <th className="py-3 px-3">Stock Status</th>
-                  <th className="py-3 px-4 text-center">Action</th>
+                  <th className="py-2.5 px-3 font-medium" scope="col">SKU Identifier</th>
+                  <th className="py-2.5 px-3 font-medium" scope="col">Product Title & Category</th>
+                  <th className="py-2.5 px-3 font-medium" scope="col">Warehouse & Bay</th>
+                  <th className="py-2.5 px-3 min-w-[150px] font-medium" scope="col">Stock / Buffer Ratio</th>
+                  <th className="py-2.5 px-3 text-right font-medium" scope="col">Unit Cost</th>
+                  <th className="py-2.5 px-3 text-right font-medium" scope="col">Wholesale</th>
+                  <th className="py-2.5 px-3 text-right font-medium" scope="col">Margin</th>
+                  <th className="py-2.5 px-3 text-right font-medium" scope="col">Velocity</th>
+                  <th className="py-2.5 px-3 font-medium" scope="col">Status</th>
+                  <th className="py-2.5 px-4 text-center font-medium" scope="col">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y-0 text-[#222026] font-sans text-xs">
+              <tbody className="text-zinc-800 text-xs divide-y divide-zinc-100">
                 {paginatedRows.length > 0 ? (
                   paginatedRows.map((row) => (
-                    <tr key={row.id} className="hover:bg-[#F3F4F7]/60 transition-colors border-b border-slate-100">
+                    <tr key={row.id} className="hover:bg-zinc-50/60 transition-colors">
                       <td className="py-3 px-4 text-center">
-                        <input type="checkbox" className="rounded accent-[#FD3706] cursor-pointer" />
+                        <input
+                          type="checkbox"
+                          checked={selectedRowIds.has(row.id)}
+                          onChange={(e) => {
+                            const next = new Set(selectedRowIds);
+                            if (e.target.checked) {
+                              next.add(row.id);
+                            } else {
+                              next.delete(row.id);
+                            }
+                            setSelectedRowIds(next);
+                          }}
+                          aria-label={`Select SKU ${row.sku}`}
+                          className="rounded accent-[#FD3706] cursor-pointer"
+                        />
                       </td>
-                      <td className="py-3 px-3 font-mono text-xs font-semibold text-[#222026]">
+                      <td className="py-3 px-3 font-mono text-xs font-semibold text-zinc-900">
                         {row.sku}
                       </td>
                       <td className="py-3 px-3">
                         <div className="flex flex-col min-w-0">
-                          <span className="font-archivo text-xs font-bold text-[#222026] truncate">
+                          <span className="font-medium text-zinc-900 truncate">
                             {row.name}
                           </span>
-                          <span className="font-mono text-[11px] text-slate-400 truncate">
+                          <span className="font-mono text-[11px] text-zinc-400 truncate">
                             {row.category}
                           </span>
                         </div>
                       </td>
                       <td className="py-3 px-3">
                         <div className="flex flex-col">
-                          <span className="font-medium text-[#222026]">{row.depot}</span>
-                          <span className="font-mono text-[11px] text-slate-400">{row.location}</span>
+                          <span className="font-medium text-zinc-800">{row.depot}</span>
+                          <span className="font-mono text-[11px] text-zinc-400">{row.location}</span>
                         </div>
                       </td>
                       <td className="py-3 px-3">
                         <div className="flex flex-col gap-1">
                           <div className="flex justify-between font-mono text-[11px]">
-                            <span className="font-bold text-[#222026]">{row.stock} units</span>
-                            <span className="text-slate-400">Buffer: {row.buffer}</span>
+                            <span className="font-medium text-zinc-900 tabular-nums">{row.stock} units</span>
+                            <span className="text-zinc-400">Buffer: {row.buffer}</span>
                           </div>
-                          <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden flex">
+                          <div className="w-full bg-zinc-100 rounded-full h-1.5 overflow-hidden flex">
                             <div
                               className={`h-full ${
                                 row.statusText === "IN STOCK"
-                                  ? "bg-[#059669]"
+                                  ? "bg-emerald-500"
                                   : row.statusText === "REORDER TRIGGERED"
-                                  ? "bg-[#D97706]"
-                                  : "bg-[#DC2626]"
+                                  ? "bg-amber-500"
+                                  : "bg-red-500"
                               }`}
                               style={{ width: `${row.ratioPercent}%` }}
                             />
                           </div>
                         </div>
                       </td>
-                      <td className="py-3 px-3 text-right font-mono text-slate-500">{row.unitCost}</td>
-                      <td className="py-3 px-3 text-right font-mono font-bold text-[#222026]">{row.wholesale}</td>
-                      <td className="py-3 px-3 text-right font-mono font-bold text-[#059669]">{row.margin}</td>
-                      <td className="py-3 px-3 text-right font-mono text-[#222026]">{row.velocity}</td>
+                      <td className="py-3 px-3 text-right font-mono text-zinc-500 tabular-nums">{row.unitCost}</td>
+                      <td className="py-3 px-3 text-right font-mono font-medium text-zinc-900 tabular-nums">{row.wholesale}</td>
+                      <td className="py-3 px-3 text-right font-mono font-medium text-emerald-600 tabular-nums">{row.margin}</td>
+                      <td className="py-3 px-3 text-right font-mono text-zinc-800 tabular-nums">{row.velocity}</td>
                       <td className="py-3 px-3">
-                        <div className={`flex items-center gap-1.5 font-mono text-xs font-bold whitespace-nowrap ${row.statusColor}`}>
-                          <span>■</span>
-                          <span>{row.statusText}</span>
+                        <div className="inline-flex items-center gap-1.5 font-mono text-xs font-medium whitespace-nowrap">
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                              row.statusText === "IN STOCK"
+                                ? "bg-emerald-500"
+                                : row.statusText === "REORDER TRIGGERED"
+                                ? "bg-amber-500"
+                                : "bg-red-500"
+                            }`}
+                          />
+                          <span
+                            className={
+                              row.statusText === "IN STOCK"
+                                ? "text-emerald-700"
+                                : row.statusText === "REORDER TRIGGERED"
+                                ? "text-amber-700"
+                                : "text-red-700"
+                            }
+                          >
+                            {row.statusText === "REORDER TRIGGERED" ? "Reorder" : row.statusText === "IN STOCK" ? "In Stock" : "Backorder"}
+                          </span>
                         </div>
                       </td>
                       <td className="py-3 px-4 text-center">
                         <button
                           type="button"
-                          className="px-2 py-1 rounded bg-[#F3F4F7] text-[#222026] hover:bg-[#FD3706] hover:text-white font-mono text-xs font-semibold transition-colors cursor-pointer"
-                          title="Quick PO requisition"
+                          disabled={replenishingId === row.inventoryId}
+                          onClick={() => handleRowPO(row)}
+                          className="h-7 px-2.5 rounded bg-zinc-100 hover:bg-zinc-900 hover:text-white text-zinc-800 font-mono text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
+                          title={`Create PO requisition for ${row.sku}`}
+                          aria-label={`Create PO requisition for ${row.sku}`}
                         >
-                          PO
+                          {replenishingId === row.inventoryId ? "..." : "PO"}
                         </button>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={11} className="py-8 text-center text-slate-400 font-mono text-xs">
+                    <td colSpan={11} className="py-8 text-center text-zinc-400 font-mono text-xs">
                       No matching SKU inventory records found.
                     </td>
                   </tr>
@@ -1175,15 +1231,15 @@ export default function DashboardOverviewPage() {
             </table>
           </div>
 
-          {/* Interactive Working Pagination Bar */}
-          <div className="px-5 py-3 bg-[#F3F4F7]/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 font-mono text-xs text-slate-500">
-            <div className="flex items-center gap-3">
-              <span className="whitespace-nowrap">
-                Displaying {(currentPage - 1) * pageSize + 1}–
-                {Math.min(currentPage * pageSize, tableRows.length)} of {tableRows.length} SKU records
+          {/* Interactive Pagination Bar */}
+          <div className="px-4 py-3 bg-zinc-50/60 border-t border-zinc-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 font-mono text-xs text-zinc-500">
+            <div className="flex items-center gap-2">
+              <span className="whitespace-nowrap tabular-nums">
+                Displaying {tableRows.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}–
+                {Math.min(currentPage * pageSize, tableRows.length)} of {tableRows.length} SKUs
               </span>
-              <span className="text-slate-300">|</span>
-              <span className="text-[#222026] font-medium whitespace-nowrap">Batch Latency: 12ms</span>
+              <span className="text-zinc-300">·</span>
+              <span className="text-zinc-600 whitespace-nowrap">Batch Latency: 12ms</span>
             </div>
 
             <div className="flex items-center gap-1">
@@ -1191,9 +1247,10 @@ export default function DashboardOverviewPage() {
                 type="button"
                 disabled={currentPage <= 1}
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="w-8 h-8 rounded bg-white text-slate-600 hover:text-[#222026] flex items-center justify-center shadow-xs disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                className="w-7 h-7 rounded bg-white border border-zinc-200 text-zinc-600 hover:text-zinc-900 flex items-center justify-center shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                aria-label="Previous page"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-3.5 h-3.5" />
               </button>
 
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
@@ -1201,10 +1258,10 @@ export default function DashboardOverviewPage() {
                   key={page}
                   type="button"
                   onClick={() => setCurrentPage(page)}
-                  className={`w-8 h-8 rounded font-archivo font-bold text-xs flex items-center justify-center transition-colors cursor-pointer ${
+                  className={`w-7 h-7 rounded text-xs font-mono font-medium flex items-center justify-center transition-colors cursor-pointer ${
                     currentPage === page
-                      ? "bg-[#FD3706] text-white shadow-xs"
-                      : "bg-white text-slate-600 hover:text-[#222026] shadow-xs"
+                      ? "bg-zinc-900 text-white shadow-2xs"
+                      : "bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 shadow-2xs"
                   }`}
                 >
                   {page}
@@ -1215,73 +1272,12 @@ export default function DashboardOverviewPage() {
                 type="button"
                 disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="w-8 h-8 rounded bg-white text-slate-600 hover:text-[#222026] flex items-center justify-center shadow-xs disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                className="w-7 h-7 rounded bg-white border border-zinc-200 text-zinc-600 hover:text-zinc-900 flex items-center justify-center shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                aria-label="Next page"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
-          </div>
-        </div>
-
-        {/* 7. Quick Access Management Ledgers */}
-        <div className="pt-2">
-          <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
-            Quick Access Management Ledgers
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <Link
-              href="/dashboard/product"
-              className="p-3 bg-white rounded-xl border border-slate-200 hover:border-[#222026] hover:bg-slate-50 transition-all flex flex-col items-center text-center group shadow-xs cursor-pointer"
-            >
-              <Package className="w-5 h-5 text-[#222026] mb-1 group-hover:scale-110 transition-transform" />
-              <span className="font-archivo text-xs font-bold text-[#222026] whitespace-nowrap">Products</span>
-              <span className="text-[10px] font-mono text-slate-400 mt-0.5 whitespace-nowrap">{products.length} SKUs</span>
-            </Link>
-
-            <Link
-              href="/dashboard/inventory"
-              className="p-3 bg-white rounded-xl border border-slate-200 hover:border-[#222026] hover:bg-slate-50 transition-all flex flex-col items-center text-center group shadow-xs cursor-pointer"
-            >
-              <Layers className="w-5 h-5 text-[#059669] mb-1 group-hover:scale-110 transition-transform" />
-              <span className="font-archivo text-xs font-bold text-[#222026] whitespace-nowrap">Inventory</span>
-              <span className="text-[10px] font-mono text-slate-400 mt-0.5 whitespace-nowrap">{inventories.length} lots</span>
-            </Link>
-
-            <Link
-              href="/dashboard/warehouse"
-              className="p-3 bg-white rounded-xl border border-slate-200 hover:border-[#222026] hover:bg-slate-50 transition-all flex flex-col items-center text-center group shadow-xs cursor-pointer"
-            >
-              <WarehouseIcon className="w-5 h-5 text-[#222026] mb-1 group-hover:scale-110 transition-transform" />
-              <span className="font-archivo text-xs font-bold text-[#222026] whitespace-nowrap">Warehouses</span>
-              <span className="text-[10px] font-mono text-slate-400 mt-0.5 whitespace-nowrap">{warehouses.length} depots</span>
-            </Link>
-
-            <Link
-              href="/dashboard/delivery"
-              className="p-3 bg-white rounded-xl border border-slate-200 hover:border-[#222026] hover:bg-slate-50 transition-all flex flex-col items-center text-center group shadow-xs cursor-pointer"
-            >
-              <Truck className="w-5 h-5 text-[#222026] mb-1 group-hover:scale-110 transition-transform" />
-              <span className="font-archivo text-xs font-bold text-[#222026] whitespace-nowrap">Deliveries</span>
-              <span className="text-[10px] font-mono text-slate-400 mt-0.5 whitespace-nowrap">{deliveries.length} dispatches</span>
-            </Link>
-
-            <Link
-              href="/dashboard/order"
-              className="p-3 bg-white rounded-xl border border-slate-200 hover:border-[#222026] hover:bg-slate-50 transition-all flex flex-col items-center text-center group shadow-xs cursor-pointer"
-            >
-              <ListCheck className="w-5 h-5 text-[#222026] mb-1 group-hover:scale-110 transition-transform" />
-              <span className="font-archivo text-xs font-bold text-[#222026] whitespace-nowrap">Orders</span>
-              <span className="text-[10px] font-mono text-slate-400 mt-0.5 whitespace-nowrap">{orders.length} POs</span>
-            </Link>
-
-            <Link
-              href="/dashboard/transfer"
-              className="p-3 bg-white rounded-xl border border-slate-200 hover:border-[#222026] hover:bg-slate-50 transition-all flex flex-col items-center text-center group shadow-xs cursor-pointer"
-            >
-              <ArrowLeftRight className="w-5 h-5 text-[#222026] mb-1 group-hover:scale-110 transition-transform" />
-              <span className="font-archivo text-xs font-bold text-[#222026] whitespace-nowrap">Transfers</span>
-              <span className="text-[10px] font-mono text-slate-400 mt-0.5 whitespace-nowrap">{transfers.length} routes</span>
-            </Link>
           </div>
         </div>
       </div>

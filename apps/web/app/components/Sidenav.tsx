@@ -23,8 +23,13 @@ import {
   BrainCircuit,
   Crown,
   Network,
+  Binary,
+  Receipt,
+  Scale,
+  CheckCheck,
   Settings,
   X,
+  RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -46,7 +51,7 @@ interface NavSection {
 
 export default function Sidenav() {
   const { data: session } = useSession();
-  const { collapsed, toggleSidebar, mobileOpen, setMobileOpen } = useSidebar();
+  const { collapsed, toggleSidebar, mobileOpen, setMobileOpen, isHydrated } = useSidebar();
   const fullPath = usePathname();
   const searchParams = useSearchParams();
   const currentTab = searchParams?.get("tab");
@@ -55,69 +60,79 @@ export default function Sidenav() {
   const isSuperAdmin = currentUserRole === "SUPERADMIN";
   const isAdmin = currentUserRole === "ADMIN";
 
-  const sections: NavSection[] = isSuperAdmin
-    ? [
-        {
-          title: "Platform Administration",
-          items: [
-            { name: "SuperAdmin Hub", path: "/superadmin", icon: Crown, badge: "BACKEND" },
-            { name: "Company Groups", path: "/superadmin?tab=groups", icon: Network },
-            { name: "Companies", path: "/companies", icon: Building2 },
-            { name: "Users & RBAC", path: "/users", icon: ShieldCheck },
-          ],
-        },
-      ]
-    : [
-        {
-          title: "Operations",
-          items: [
-            { name: "Overview", path: "", icon: LayoutDashboard },
-            { name: "Orders", path: "/order", icon: ListCheck },
-            { name: "Transfers", path: "/transfer", icon: ArrowLeftRight },
-          ],
-        },
-        {
-          title: "Assets & Inventory",
-          items: [
-            { name: "Products", path: "/product", icon: Barcode },
-            { name: "Inventory", path: "/inventory", icon: Layers },
-            { name: "Warehouses", path: "/warehouse", icon: Warehouse },
-            { name: "Locations", path: "/location", icon: Map },
-          ],
-        },
-        {
-          title: "Logistics & Supply",
-          items: [
-            { name: "Deliveries", path: "/delivery", icon: Truck },
-            { name: "Providers", path: "/provider", icon: BookUser },
-            { name: "Customers", path: "/customer", icon: Users },
-          ],
-        },
-        {
-          title: "Finance & Audit",
-          items: [
-            { name: "Payments", path: "/payment", icon: Coins },
-            { name: "Transactions", path: "/transaction", icon: Captions },
-          ],
-        },
-        ...(isAdmin
-          ? [
-              {
-                title: "Governance",
-                items: [
-                  { name: "Companies", path: "/companies", icon: Building2 },
-                  { name: "Users & RBAC", path: "/users", icon: ShieldCheck },
-                ],
-              },
-            ]
-          : []),
-      ];
+  const sections: NavSection[] = [
+    ...(isSuperAdmin
+      ? [
+          {
+            title: "Platform Administration",
+            items: [
+              { name: "SuperAdmin Hub", path: "/superadmin", icon: Crown },
+              { name: "Company Groups", path: "/superadmin?tab=groups", icon: Network },
+              { name: "Companies", path: "/companies", icon: Building2 },
+              { name: "Users & RBAC", path: "/users", icon: ShieldCheck },
+            ],
+          },
+        ]
+      : []),
+    {
+      title: "Operations",
+      items: [
+        { name: "Overview", path: "", icon: LayoutDashboard },
+        { name: "Orders", path: "/order", icon: ListCheck },
+        { name: "Transfers", path: "/transfer", icon: ArrowLeftRight },
+      ],
+    },
+    {
+      title: "Assets & Inventory",
+      items: [
+        { name: "Products", path: "/product", icon: Barcode },
+        { name: "Inventory", path: "/inventory", icon: Layers },
+        { name: "Forecast & Auto-PO", path: "/forecast", icon: BrainCircuit, badge: "AI" },
+        { name: "Warehouses", path: "/warehouse", icon: Warehouse },
+        { name: "Locations", path: "/location", icon: Map },
+      ],
+    },
+    {
+      title: "Logistics & Supply",
+      items: [
+        { name: "Deliveries", path: "/delivery", icon: Truck },
+        { name: "Returns & RMA", path: "/delivery?tab=rma", icon: RotateCcw },
+        { name: "Providers", path: "/provider", icon: BookUser },
+        { name: "Customers", path: "/customer", icon: Users },
+        { name: "EDI Gateway", path: "/edi", icon: Binary, badge: "EDI" },
+      ],
+    },
+    {
+      title: "Finance & Audit",
+      items: [
+        { name: "Invoices & 3-Way Match", path: "/invoice", icon: Receipt },
+        { name: "Approval Queue", path: "/approval", icon: ShieldCheck },
+        { name: "Payments", path: "/payment", icon: Coins },
+        { name: "Transactions", path: "/transaction", icon: Captions },
+      ],
+    },
+    ...(isAdmin && !isSuperAdmin
+      ? [
+          {
+            title: "Governance",
+            items: [
+              { name: "Companies", path: "/companies", icon: Building2 },
+              { name: "Users & RBAC", path: "/users", icon: ShieldCheck },
+            ],
+          },
+        ]
+      : []),
+  ];
 
   const renderNavContent = (isDrawer = false) => {
     const isCollapsed = isDrawer ? false : collapsed;
 
     return (
-      <div className="h-full flex flex-col justify-between p-3 overflow-x-hidden overflow-y-auto bg-[#222026] text-[#CAC5CD] select-none">
+      <div
+        className={`h-full flex flex-col justify-between p-3 bg-[#141415] text-[#d4d4d8] select-none ${
+          isCollapsed ? "overflow-visible" : "overflow-x-hidden overflow-y-auto"
+        }`}
+      >
         {/* Top Header */}
         <div>
           {isCollapsed ? (
@@ -127,15 +142,16 @@ export default function Sidenav() {
                 className="flex items-center justify-center group"
                 title="Mesh Supply Chain"
               >
-                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-105">
-                  <MeshLogoSvg size={22} className="text-[#FD3706]" />
+                <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-xs transition-opacity group-hover:opacity-90">
+                  <MeshLogoSvg size={20} className="text-[#FD3706]" />
                 </div>
               </Link>
               <button
                 type="button"
                 onClick={toggleSidebar}
-                className="w-8 h-8 hidden lg:flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#19171C] rounded-lg transition-colors cursor-pointer"
+                className="w-8 h-8 hidden lg:flex items-center justify-center text-[#71717a] hover:text-[#ededed] hover:bg-white/[0.06] rounded-md transition-colors cursor-pointer"
                 title="Expand sidebar"
+                aria-label="Expand sidebar"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -145,18 +161,18 @@ export default function Sidenav() {
               <Link
                 href={isSuperAdmin ? "/dashboard/superadmin" : "/dashboard"}
                 onClick={() => isDrawer && setMobileOpen(false)}
-                className="flex items-center gap-3 group min-w-0"
+                className="flex items-center gap-2.5 group min-w-0"
                 title="Mesh Supply Chain"
               >
-                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-105">
-                  <MeshLogoSvg size={22} className="text-[#FD3706]" />
+                <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-xs transition-opacity group-hover:opacity-90">
+                  <MeshLogoSvg size={20} className="text-[#FD3706]" />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="font-archivo text-base font-bold tracking-tight text-white uppercase truncate">
+                  <span className="text-sm font-semibold tracking-tight text-[#ededed] truncate">
                     Mesh
                   </span>
-                  <span className="font-mono text-[9px] uppercase tracking-widest text-slate-400">
-                    {isSuperAdmin ? "Platform Admin" : "SCM Telemetry"}
+                  <span className="font-mono text-[10px] text-[#71717a] truncate">
+                    {isSuperAdmin ? "Platform Admin" : "Telemetry & Logistics"}
                   </span>
                 </div>
               </Link>
@@ -164,8 +180,9 @@ export default function Sidenav() {
                 <button
                   type="button"
                   onClick={toggleSidebar}
-                  className="hidden lg:flex items-center justify-center p-1.5 text-slate-400 hover:text-white hover:bg-[#19171C] rounded-lg transition-colors cursor-pointer"
+                  className="hidden lg:flex items-center justify-center p-1.5 text-[#71717a] hover:text-[#ededed] hover:bg-white/[0.06] rounded-md transition-colors cursor-pointer"
                   title="Collapse sidebar"
+                  aria-label="Collapse sidebar"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -173,10 +190,11 @@ export default function Sidenav() {
                 <button
                   type="button"
                   onClick={() => setMobileOpen(false)}
-                  className="lg:hidden p-1.5 text-slate-400 hover:text-white hover:bg-[#19171C] rounded-lg transition-colors cursor-pointer"
+                  className="lg:hidden p-1.5 text-[#71717a] hover:text-[#ededed] hover:bg-white/[0.06] rounded-md transition-colors cursor-pointer"
                   title="Close navigation"
+                  aria-label="Close navigation"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               )}
             </div>
@@ -187,12 +205,12 @@ export default function Sidenav() {
             {sections.map((section, sIndex) => (
               <div key={sIndex} className="space-y-1">
                 {!isCollapsed && (
-                  <p className="text-[10px] font-bold tracking-wider uppercase text-slate-400 px-3 py-1 font-mono">
+                  <p className="text-[11px] font-medium text-[#71717a] px-2.5 py-1 tracking-normal">
                     {section.title}
                   </p>
                 )}
                 {isCollapsed && sIndex > 0 && (
-                  <div className="h-px bg-[#333138] my-2 mx-2" />
+                  <div className="h-px bg-white/[0.08] my-2 mx-2" />
                 )}
                 <ul className="space-y-0.5">
                   {section.items.map((item, iIndex) => {
@@ -201,8 +219,11 @@ export default function Sidenav() {
                     if (item.path === "") {
                       active = fullPath === "/dashboard" || fullPath === "/dashboard/";
                     } else if (item.path.includes("tab=")) {
-                      const tab = item.path.split("tab=")[1];
-                      active = fullPath.startsWith("/dashboard/superadmin") && currentTab === tab;
+                      const [base, query] = item.path.split("?");
+                      const tab = new URLSearchParams(query).get("tab");
+                      active = fullPath.startsWith("/dashboard" + base) && currentTab === tab;
+                    } else if (item.path === "/delivery") {
+                      active = fullPath.startsWith("/dashboard/delivery") && currentTab !== "rma";
                     } else if (item.path === "/superadmin") {
                       active = fullPath === "/dashboard/superadmin" && !currentTab;
                     } else if (item.path === "/companies") {
@@ -223,38 +244,34 @@ export default function Sidenav() {
                         <Link
                           href={targetHref}
                           onClick={() => setMobileOpen(false)}
-                          className={`flex items-center rounded-lg transition-all duration-150 ${
+                          className={`flex items-center rounded-md text-xs transition-colors duration-150 ${
                             isCollapsed
-                              ? "justify-center h-10 w-10 mx-auto"
+                              ? "justify-center h-9 w-9 mx-auto"
                               : "px-2.5 py-2 gap-2.5"
                           } ${
                             active
-                              ? "bg-[#FD3706] text-white font-semibold shadow-sm"
-                              : "text-[#CAC5CD] hover:text-white hover:bg-[#19171C]"
+                              ? isCollapsed
+                                ? "bg-[#232326] text-white border border-white/[0.12]"
+                                : "bg-[#232326] text-white font-medium border-l-2 border-[#FD3706] pl-2"
+                              : "text-[#a1a1a6] hover:text-[#ededed] hover:bg-white/[0.04]"
                           }`}
                           title={isCollapsed ? item.name : undefined}
                         >
                           <Icon
-                            className={`shrink-0 transition-transform w-4 h-4 ${
+                            className={`shrink-0 w-4 h-4 transition-colors ${
                               active
-                                ? "text-white"
-                                : "text-slate-400 group-hover/item:text-white"
+                                ? "text-[#FD3706]"
+                                : "text-[#71717a] group-hover/item:text-[#ededed]"
                             }`}
                           />
                           {!isCollapsed && (
                             <div className="flex-1 flex items-center justify-between min-w-0">
-                              <span className="text-xs font-medium truncate">
+                              <span className="truncate">
                                 {item.name}
                               </span>
                               {item.badge && (
                                 <span
-                                  className={`text-[9px] font-bold px-1.5 py-0.2 rounded shrink-0 ${
-                                    active
-                                      ? "bg-white/20 text-white"
-                                      : item.badge === "PRO"
-                                      ? "bg-amber-400/20 text-amber-300 border border-amber-400/30"
-                                      : "bg-[#FD3706]/20 text-[#FD3706] border border-[#FD3706]/30"
-                                  }`}
+                                  className="text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 bg-white/[0.06] text-[#a1a1a6] border border-white/[0.08]"
                                 >
                                   {item.badge}
                                 </span>
@@ -265,7 +282,7 @@ export default function Sidenav() {
 
                         {/* Hover Tooltip when collapsed in 72px dock mode */}
                         {isCollapsed && (
-                          <div className="hidden lg:block absolute left-full ml-3 px-2.5 py-1.5 bg-[#19171C] text-white text-xs font-semibold rounded-md shadow-xl opacity-0 pointer-events-none group-hover/item:opacity-100 group-hover/item:pointer-events-auto transition-opacity z-50 whitespace-nowrap top-1/2 -translate-y-1/2 border border-[#333138]">
+                          <div className="hidden lg:block absolute left-full ml-2.5 px-2.5 py-1.5 bg-[#19191b] text-[#ededed] text-xs rounded-md shadow-lg opacity-0 pointer-events-none group-hover/item:opacity-100 group-hover/item:pointer-events-auto transition-opacity z-50 whitespace-nowrap top-1/2 -translate-y-1/2 border border-white/[0.1]">
                             {item.name}
                           </div>
                         )}
@@ -279,11 +296,11 @@ export default function Sidenav() {
         </div>
 
         {/* Footer Exit / Profile Actions */}
-        <div className="pt-3 border-t border-[#333138] mt-4">
+        <div className="pt-3 border-t border-white/[0.08] mt-4">
           {isCollapsed ? (
             <div className="flex flex-col items-center gap-2">
               <div
-                className="w-9 h-9 rounded-full bg-[#19171C] border border-[#333138] flex items-center justify-center font-bold text-xs text-white shadow-2xs cursor-default font-archivo"
+                className="w-8 h-8 rounded-full bg-[#19191b] border border-white/[0.1] flex items-center justify-center font-medium text-xs text-[#ededed] cursor-default"
                 title={`${session?.user?.name || "Admin"} (${session?.user?.email || "admin@mesh.com"})`}
               >
                 {session?.user?.name
@@ -293,25 +310,26 @@ export default function Sidenav() {
               <button
                 type="button"
                 onClick={() => signOut({ callbackUrl: "/login" })}
-                className="p-2 text-slate-400 hover:text-[#FD3706] hover:bg-[#19171C] rounded-lg transition-colors cursor-pointer"
-                title="Sign Out Terminal"
+                className="p-1.5 text-[#71717a] hover:text-[#FD3706] hover:bg-white/[0.06] rounded-md transition-colors cursor-pointer"
+                title="Sign out"
+                aria-label="Sign out"
               >
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
           ) : (
-            <div className="bg-[#19171C] border border-[#333138] rounded-xl p-2.5 shadow-2xs flex items-center justify-between gap-2">
+            <div className="bg-[#19191b] border border-white/[0.08] rounded-lg p-2.5 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-full bg-[#FD3706] flex items-center justify-center font-bold text-xs text-white shrink-0 font-archivo">
+                <div className="w-7 h-7 rounded-full bg-[#27272a] border border-white/[0.1] flex items-center justify-center font-medium text-xs text-[#ededed] shrink-0">
                   {session?.user?.name
                     ? session.user.name.charAt(0).toUpperCase()
                     : "U"}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-white truncate leading-tight">
-                    {session?.user?.name || "Admin User"}
+                  <p className="text-xs font-medium text-[#ededed] truncate leading-tight">
+                    {session?.user?.name || "Operations User"}
                   </p>
-                  <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400">
+                  <span className="text-[10px] font-mono text-[#71717a]">
                     {currentUserRole}
                   </span>
                 </div>
@@ -319,8 +337,9 @@ export default function Sidenav() {
               <button
                 type="button"
                 onClick={() => signOut({ callbackUrl: "/login" })}
-                className="p-1.5 text-slate-400 hover:text-[#FD3706] hover:bg-[#222026] rounded-lg transition-colors shrink-0 cursor-pointer"
-                title="Sign Out"
+                className="p-1.5 text-[#71717a] hover:text-[#FD3706] hover:bg-white/[0.06] rounded-md transition-colors shrink-0 cursor-pointer"
+                title="Sign out"
+                aria-label="Sign out"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -343,7 +362,7 @@ export default function Sidenav() {
 
       {/* Mobile & Tablet Drawer Slide-Out Panel */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-[#222026] border-r border-[#19171C] shadow-2xl transition-transform duration-300 ease-in-out lg:hidden flex flex-col ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-[#141415] border-r border-white/[0.08] shadow-2xl transition-transform duration-300 ease-in-out lg:hidden flex flex-col ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -352,9 +371,9 @@ export default function Sidenav() {
 
       {/* Desktop In-Flow Sidebar Edge-to-Edge */}
       <aside
-        className={`hidden lg:flex flex-col justify-between shrink-0 h-screen sticky top-0 transition-all duration-300 ease-in-out bg-[#222026] border-r border-[#19171C] ${
-          collapsed ? "w-[72px]" : "w-64"
-        }`}
+        className={`hidden lg:flex flex-col justify-between shrink-0 h-screen sticky top-0 bg-[#141415] border-r border-white/[0.08] z-30 ${
+          isHydrated ? "transition-all duration-300 ease-in-out" : ""
+        } ${collapsed ? "w-[72px]" : "w-64"}`}
         aria-label="Sidebar"
       >
         {renderNavContent(false)}
