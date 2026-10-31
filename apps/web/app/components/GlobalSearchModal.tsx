@@ -44,10 +44,18 @@ export default function GlobalSearchModal({
     setMounted(true);
   }, []);
 
-  // 1. Listen for Cmd+K / Ctrl+K keyboard shortcut
+  // 1. Listen for search keyboard shortcut (/ or Cmd+/ or Cmd+Shift+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      const isTargetInput = ["INPUT", "TEXTAREA", "SELECT"].includes(
+        (e.target as HTMLElement)?.tagName
+      );
+
+      if (
+        ((e.metaKey || e.ctrlKey) && e.key === "/") ||
+        ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "k") ||
+        (e.key === "/" && !isTargetInput)
+      ) {
         e.preventDefault();
         onOpenChange(!open);
       } else if (e.key === "Escape" && open) {

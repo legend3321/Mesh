@@ -176,7 +176,7 @@ export default function LocationPage() {
           <Button
             size="sm"
             onClick={handleOpenCreate}
-            className="h-9 gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+            className="h-9 gap-1.5 text-xs bg-[#FD3706] hover:bg-[#E02E00] text-white shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
             Add Location

@@ -10,11 +10,21 @@ import Header from "@/app/components/Header";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#F3F4F7] flex flex-col lg:flex-row text-[#222026]">
+    <div className="h-screen w-full bg-[#F3F4F7] flex flex-col lg:flex-row text-[#222026] overflow-hidden">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[200] focus:px-4 focus:py-2 focus:bg-[#222026] focus:text-white focus:rounded-lg focus:shadow-xl focus:ring-2 focus:ring-[#FD3706]"
+      >
+        Skip to main content
+      </a>
       <Sidenav />
-      <div className="flex-1 min-w-0 flex flex-col bg-[#F3F4F7] min-h-screen overflow-x-hidden">
+      <div className="flex-1 min-w-0 flex flex-col bg-[#F3F4F7] h-full overflow-hidden">
         <Header />
-        <main className="flex-1 min-w-0 p-4 sm:p-6 overflow-y-auto">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="flex-1 min-w-0 p-4 sm:p-6 overflow-y-auto overflow-x-hidden focus:outline-none"
+        >
           {children}
         </main>
       </div>

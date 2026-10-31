@@ -9,6 +9,7 @@ interface SidebarContextType {
   mobileOpen: boolean;
   setMobileOpen: (open: boolean) => void;
   toggleMobile: () => void;
+  isHydrated: boolean;
 }
 
 const SidebarContext = createContext<SidebarContextType>({
@@ -18,22 +19,30 @@ const SidebarContext = createContext<SidebarContextType>({
   mobileOpen: false,
   setMobileOpen: () => {},
   toggleMobile: () => {},
+  isHydrated: false,
 });
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  // Restore user's preference from localStorage if available
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("mesh_sidebar_collapsed");
-      if (saved !== null) {
-        setCollapsed(saved === "true");
+  // Lazily read preference synchronously on initial client render to prevent CLS layout shift
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("mesh_sidebar_collapsed");
+        if (saved !== null) {
+          return saved === "true";
+        }
+      } catch (e) {
+        // Ignore localStorage issues
       }
-    } catch (e) {
-      // Ignore localStorage issues
     }
+    return false;
+  });
+
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
   }, []);
 
   const toggleSidebar = () => {
@@ -61,6 +70,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
         mobileOpen,
         setMobileOpen,
         toggleMobile,
+        isHydrated,
       }}
     >
       {children}

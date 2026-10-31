@@ -1,9 +1,23 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import api from "@/app/assets/api";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw, Layers, AlertCircle, Warehouse as WarehouseIcon, Package, BrainCircuit, ShieldAlert } from "lucide-react";
+import {
+  Plus,
+  RefreshCw,
+  Layers,
+  Warehouse as WarehouseIcon,
+  Package,
+  BrainCircuit,
+  ShieldAlert,
+  MapPin,
+  Clock,
+  CheckCircle2,
+  AlertTriangle,
+  Calendar,
+  Boxes,
+} from "lucide-react";
 import GenericEntityTable, { ColumnConfig } from "@/app/components/crud/GenericEntityTable";
 import GenericEntityDrawer, { DrawerField } from "@/app/components/crud/GenericEntityDrawer";
 import GenericEntityModal, { ModalFormField } from "@/app/components/crud/GenericEntityModal";
@@ -12,7 +26,9 @@ import { toast } from "@/components/ui/use-toast";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useCompany } from "@/app/components/CompanyContext";
-import type { Inventory, Product, Warehouse } from "@mesh/types";
+import { cn } from "@/lib/utils";
+import type { Inventory, Product, Warehouse, BinLocation, Batch } from "@mesh/types";
+import FefoAdvisorModal from "./FefoAdvisorModal";
 
 export default function InventoryPage() {
   const { data: session } = useSession();
@@ -25,6 +41,8 @@ export default function InventoryPage() {
   const [inventories, setInventories] = useState<Inventory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [binLocations, setBinLocations] = useState<BinLocation[]>([]);
+  const [batches, setBatches] = useState<Batch[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<Inventory | null>(null);
 
@@ -33,6 +51,10 @@ export default function InventoryPage() {
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [targetItem, setTargetItem] = useState<Inventory | null>(null);
 
+  // FEFO Picking Advisor
+  const [isFefoOpen, setIsFefoOpen] = useState(false);
+  const [fefoProductId, setFefoProductId] = useState<string | undefined>(undefined);
+
   useEffect(() => {
     fetchData();
   }, [activeCompanyId]);
@@ -40,14 +62,18 @@ export default function InventoryPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [invRes, prodRes, whRes] = await Promise.all([
+      const [invRes, prodRes, whRes, binRes, batchRes] = await Promise.all([
         api.get("/inventory/getAll"),
         api.get("/product/getAll"),
         api.get("/warehouse/getAll"),
+        api.get("/bin-location/getAll"),
+        api.get("/batch/getAll"),
       ]);
       setInventories(invRes.data);
       setProducts(prodRes.data);
       setWarehouses(whRes.data);
+      setBinLocations(binRes.data);
+      setBatches(batchRes.data);
 
       if (selectedItem) {
         const found = invRes.data.find((i: Inventory) => i.InventoryID === selectedItem.InventoryID);
@@ -74,6 +100,74 @@ export default function InventoryPage() {
     return w ? w.WarehouseName : whId;
   };
 
+  const getBinLocation = (binId?: string | null, invBin?: BinLocation | null) => {
+    if (invBin) return invBin;
+    if (!binId) return null;
+    return binLocations.find((b) => b.BinID === binId) || null;
+  };
+
+  const getBatch = (batchId?: string | null, invBatch?: Batch | null) => {
+    if (invBatch) return invBatch;
+    if (!batchId) return null;
+    return batches.find((b) => b.BatchID === batchId) || null;
+  };
+
+  const getFefoStatus = (expiryDateInput?: string | Date | null) => {
+    if (!expiryDateInput) return null;
+    const exp = new Date(expiryDateInput);
+    if (isNaN(exp.getTime())) return null;
+    const now = new Date();
+    const diffDays = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 0) {
+      return {
+        status: "EXPIRED",
+        label: `Expired (${Math.abs(diffDays)}d ago)`,
+        days: diffDays,
+        dotClass: "bg-red-500",
+        textClass: "text-red-700 font-medium",
+        icon: AlertTriangle,
+      };
+    }
+    if (diffDays <= 30) {
+      return {
+        status: "EXPIRING_SOON",
+        label: `Expiring soon (${diffDays}d left)`,
+        days: diffDays,
+        dotClass: "bg-amber-500",
+        textClass: "text-amber-700 font-medium",
+        icon: Clock,
+      };
+    }
+    return {
+      status: "HEALTHY",
+      label: `Healthy (${diffDays}d left)`,
+      days: diffDays,
+      dotClass: "bg-emerald-500",
+      textClass: "text-zinc-600",
+      icon: CheckCircle2,
+    };
+  };
+
+  // Operational Telemetry Metrics
+  const telemetry = useMemo(() => {
+    const totalSkus = inventories.length;
+    const totalUnits = inventories.reduce(
+      (sum, item) => sum + (Number(item.InventoryAvailable) || 0),
+      0
+    );
+    const lowStockCount = inventories.filter(
+      (item) => item.InventoryAvailable <= item.ReorderPoint
+    ).length;
+    const expiringCount = inventories.filter((inv) => {
+      const b = getBatch(inv.BatchID, inv.Batch);
+      if (!b) return false;
+      const status = getFefoStatus(b.ExpiryDate)?.status;
+      return status === "EXPIRED" || status === "EXPIRING_SOON";
+    }).length;
+
+    return { totalSkus, totalUnits, lowStockCount, expiringCount };
+  }, [inventories, batches]);
+
   const handleOpenCreate = () => {
     setTargetItem(null);
     setModalMode("create");
@@ -93,6 +187,8 @@ export default function InventoryPage() {
       MinStockLevel: Number(formData.MinStockLevel),
       MaxStockLevel: Number(formData.MaxStockLevel),
       ReorderPoint: Number(formData.ReorderPoint),
+      BinID: formData.BinID ? formData.BinID : null,
+      BatchID: formData.BatchID ? formData.BatchID : null,
     };
 
     if (modalMode === "create") {
@@ -142,11 +238,11 @@ export default function InventoryPage() {
       render: (inv) => (
         <Link
           href={`/dashboard/product?q=${encodeURIComponent(getProductName(inv.ProductID))}`}
-          className="font-semibold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-2"
+          className="font-medium text-zinc-900 hover:text-[#FD3706] transition-colors duration-150 flex items-center gap-2 group"
           onClick={(e) => e.stopPropagation()}
         >
-          <Package className="w-4 h-4 text-blue-600 shrink-0" />
-          <span>{getProductName(inv.ProductID)}</span>
+          <Package className="w-4 h-4 text-zinc-400 group-hover:text-[#FD3706] transition-colors shrink-0" strokeWidth={1.5} />
+          <span className="truncate">{getProductName(inv.ProductID)}</span>
         </Link>
       ),
     },
@@ -157,57 +253,130 @@ export default function InventoryPage() {
       render: (inv) => (
         <Link
           href={`/dashboard/warehouse?q=${encodeURIComponent(getWarehouseName(inv.WarehouseID))}`}
-          className="inline-flex items-center gap-1.5 text-slate-700 hover:text-blue-700 hover:underline font-medium text-xs"
+          className="inline-flex items-center gap-1.5 text-xs text-zinc-600 hover:text-zinc-900 font-medium transition-colors duration-150"
           onClick={(e) => e.stopPropagation()}
         >
-          <WarehouseIcon className="w-3.5 h-3.5 text-slate-400" />
-          {getWarehouseName(inv.WarehouseID)}
+          <WarehouseIcon className="w-3.5 h-3.5 text-zinc-400 shrink-0" strokeWidth={1.5} />
+          <span>{getWarehouseName(inv.WarehouseID)}</span>
         </Link>
       ),
     },
     {
-      key: "InventoryAvailable",
-      header: "Available Stock",
-      sortable: true,
+      key: "BinID",
+      header: "Bin location",
       render: (inv) => {
-        const isLow = inv.InventoryAvailable <= inv.ReorderPoint;
-        return (
-          <div className="flex items-center gap-2.5">
-            <span
-              className={`font-semibold text-xs ${
-                isLow ? "text-amber-600 font-bold" : "text-slate-900"
-              }`}
-            >
-              {inv.InventoryAvailable.toLocaleString()} units
+        const bin = getBinLocation(inv.BinID, inv.BinLocation);
+        if (!bin) {
+          return (
+            <span className="text-xs text-zinc-400 font-mono">
+              Unassigned
             </span>
-            {isLow ? (
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-600">
-                <span className="w-1.5 h-1.5 rounded-xs bg-amber-600 shrink-0" />
-                Low Stock
+          );
+        }
+        const zoneName = bin.Zone?.ZoneName || bin.Zone?.ZoneType;
+        return (
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-mono font-medium bg-zinc-100 text-zinc-700 border border-zinc-200/80">
+                <MapPin className="w-3 h-3 text-zinc-400 shrink-0" strokeWidth={1.5} />
+                {bin.BinCode}
               </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-teal-600">
-                <span className="w-1.5 h-1.5 rounded-xs bg-teal-600 shrink-0" />
-                In Stock
+              {zoneName && (
+                <span className="text-[10px] font-mono uppercase px-1.5 py-0.2 rounded-md bg-zinc-100 text-zinc-600 border border-zinc-200/80">
+                  {zoneName}
+                </span>
+              )}
+            </div>
+            <span className="text-[10px] text-zinc-400 font-mono tabular-nums">
+              A{bin.Aisle}-R{bin.Rack}-S{bin.Shelf}-B{bin.Bin}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: "BatchID",
+      header: "Batch / FEFO",
+      render: (inv) => {
+        const batch = getBatch(inv.BatchID, inv.Batch);
+        if (!batch) {
+          return (
+            <span className="text-xs text-zinc-400 font-mono">
+              No batch
+            </span>
+          );
+        }
+        const fefo = getFefoStatus(batch.ExpiryDate);
+        const expStr = new Date(batch.ExpiryDate).toISOString().split("T")[0];
+
+        return (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono text-xs font-medium text-zinc-900">
+                {batch.BatchNumber}
               </span>
+              {batch.SupplierLotNumber && (
+                <span className="text-[10px] text-zinc-400 font-mono">
+                  (Lot: {batch.SupplierLotNumber})
+                </span>
+              )}
+            </div>
+            {fefo && (
+              <div className="flex items-center gap-1.5 text-[11px] font-mono tabular-nums">
+                <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", fefo.dotClass)} />
+                <span className={fefo.textClass}>{fefo.label}</span>
+                <span className="text-zinc-400 font-normal">({expStr})</span>
+              </div>
             )}
           </div>
         );
       },
     },
     {
+      key: "InventoryAvailable",
+      header: "Available stock",
+      sortable: true,
+      render: (inv) => {
+        const isLow = inv.InventoryAvailable <= inv.ReorderPoint;
+        return (
+          <div className="flex items-center gap-2">
+            <span className="font-mono tabular-nums font-semibold text-xs text-zinc-900">
+              {inv.InventoryAvailable.toLocaleString()}{" "}
+              <span className="font-sans font-normal text-zinc-400 text-[11px]">units</span>
+            </span>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 text-[11px] font-medium font-mono",
+                isLow ? "text-amber-700" : "text-emerald-700"
+              )}
+            >
+              <span
+                className={cn(
+                  "w-1.5 h-1.5 rounded-full shrink-0",
+                  isLow ? "bg-amber-500" : "bg-emerald-500"
+                )}
+              />
+              <span>{isLow ? "Low stock" : "In stock"}</span>
+            </span>
+          </div>
+        );
+      },
+    },
+    {
       key: "ReorderPoint",
-      header: "Reorder Point",
+      header: "Reorder point",
       render: (inv) => (
-        <span className="text-slate-600">{inv.ReorderPoint} units</span>
+        <span className="font-mono tabular-nums text-xs text-zinc-600">
+          {inv.ReorderPoint} units
+        </span>
       ),
     },
     {
       key: "StockLimits",
       header: "Min / Max",
       render: (inv) => (
-        <span className="text-xs text-slate-500">
-          {inv.MinStockLevel} — {inv.MaxStockLevel}
+        <span className="font-mono tabular-nums text-xs text-zinc-500">
+          {inv.MinStockLevel} – {inv.MaxStockLevel}
         </span>
       ),
     },
@@ -219,26 +388,105 @@ export default function InventoryPage() {
       render: (inv) => getProductName(inv.ProductID),
     },
     {
-      label: "Warehouse Location",
+      label: "Warehouse location",
       render: (inv) => getWarehouseName(inv.WarehouseID),
     },
     {
-      label: "Current Available Inventory",
-      render: (inv) => `${inv.InventoryAvailable.toLocaleString()} units`,
+      label: "Bin location",
+      render: (inv) => {
+        const bin = getBinLocation(inv.BinID, inv.BinLocation);
+        if (!bin) return <span className="text-zinc-400 font-mono text-xs">Unassigned</span>;
+        return (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-medium text-xs bg-zinc-100 text-zinc-900 px-2 py-0.5 rounded-md border border-zinc-200/80">
+                {bin.BinCode}
+              </span>
+              {(bin.Zone?.ZoneName || bin.Zone?.ZoneType) && (
+                <span className="text-[10px] font-mono uppercase bg-zinc-100 text-zinc-600 px-1.5 py-0.5 rounded-md border border-zinc-200/80">
+                  {bin.Zone?.ZoneName || bin.Zone?.ZoneType}
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-zinc-600 font-mono tabular-nums">
+              Coordinates: Aisle {bin.Aisle} • Rack {bin.Rack} • Shelf {bin.Shelf} • Bin {bin.Bin}
+            </div>
+            {(bin.MaxWeightKg || bin.MaxVolumeCbm) && (
+              <div className="text-[11px] text-zinc-400 font-mono tabular-nums">
+                Capacity: {bin.MaxWeightKg ? `${bin.MaxWeightKg} kg` : ""} {bin.MaxVolumeCbm ? `| ${bin.MaxVolumeCbm} cbm` : ""}
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
-      label: "Stock Reorder Trigger Point",
-      render: (inv) => `${inv.ReorderPoint} units`,
+      label: "Batch & FEFO status",
+      render: (inv) => {
+        const batch = getBatch(inv.BatchID, inv.Batch);
+        if (!batch) return <span className="text-zinc-400 font-mono text-xs">No linked batch</span>;
+        const fefo = getFefoStatus(batch.ExpiryDate);
+        return (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-medium text-xs text-zinc-900">{batch.BatchNumber}</span>
+              {batch.SupplierLotNumber && (
+                <span className="text-[11px] text-zinc-400 font-mono">Lot: {batch.SupplierLotNumber}</span>
+              )}
+            </div>
+            <div className="text-xs text-zinc-600 font-mono tabular-nums">
+              Expiry date: <span className="font-medium text-zinc-900">{new Date(batch.ExpiryDate).toISOString().split("T")[0]}</span>
+            </div>
+            {fefo && (
+              <div className="flex items-center gap-1.5 text-[11px] font-mono tabular-nums">
+                <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", fefo.dotClass)} />
+                <span className={fefo.textClass}>{fefo.label}</span>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
-      label: "Minimum Safe Stock Level",
-      render: (inv) => `${inv.MinStockLevel} units`,
+      label: "Available inventory",
+      render: (inv) => (
+        <span className="font-mono tabular-nums font-semibold text-xs text-zinc-900">
+          {inv.InventoryAvailable.toLocaleString()} <span className="font-sans font-normal text-zinc-400">units</span>
+        </span>
+      ),
     },
     {
-      label: "Maximum Capacity Threshold",
-      render: (inv) => `${inv.MaxStockLevel} units`,
+      label: "Reorder trigger point",
+      render: (inv) => (
+        <span className="font-mono tabular-nums text-xs text-zinc-700">
+          {inv.ReorderPoint} units
+        </span>
+      ),
     },
-    { label: "Inventory Record ID", key: "InventoryID" },
+    {
+      label: "Minimum stock level",
+      render: (inv) => (
+        <span className="font-mono tabular-nums text-xs text-zinc-700">
+          {inv.MinStockLevel} units
+        </span>
+      ),
+    },
+    {
+      label: "Maximum stock capacity",
+      render: (inv) => (
+        <span className="font-mono tabular-nums text-xs text-zinc-700">
+          {inv.MaxStockLevel} units
+        </span>
+      ),
+    },
+    {
+      label: "Inventory record ID",
+      render: (inv) => (
+        <span className="font-mono text-xs text-zinc-500">
+          {inv.InventoryID}
+        </span>
+      ),
+    },
   ];
 
   const modalFields: ModalFormField[] = [
@@ -263,77 +511,109 @@ export default function InventoryPage() {
       })),
     },
     {
+      name: "BinID",
+      label: "Bin location",
+      type: "select",
+      required: false,
+      options: binLocations.map((b) => ({
+        label: `${b.BinCode} [${b.Zone?.ZoneName || b.Zone?.ZoneType || "Zone"}] (${getWarehouseName(b.WarehouseID)}: A${b.Aisle}-R${b.Rack}-S${b.Shelf}-B${b.Bin})`,
+        value: b.BinID,
+      })),
+    },
+    {
+      name: "BatchID",
+      label: "Batch number",
+      type: "select",
+      required: false,
+      options: batches.map((b) => {
+        const exp = new Date(b.ExpiryDate).toISOString().split("T")[0];
+        const fefo = getFefoStatus(b.ExpiryDate);
+        return {
+          label: `${b.BatchNumber} (Exp: ${exp} — ${fefo?.status || "VALID"})`,
+          value: b.BatchID,
+        };
+      }),
+    },
+    {
       name: "InventoryAvailable",
-      label: "Available Quantity",
+      label: "Available quantity",
       type: "number",
       required: true,
       defaultValue: 100,
     },
     {
       name: "MinStockLevel",
-      label: "Min Stock Level",
+      label: "Min stock level",
       type: "number",
       required: true,
       defaultValue: 20,
     },
     {
       name: "MaxStockLevel",
-      label: "Max Stock Level",
+      label: "Max stock level",
       type: "number",
       required: true,
       defaultValue: 500,
     },
     {
       name: "ReorderPoint",
-      label: "Reorder Point",
+      label: "Reorder point",
       type: "number",
       required: true,
       defaultValue: 40,
     },
   ];
 
-  if (isSuperAdmin && !isCompanyMember) {
-    return (
-      <div className="max-w-2xl mx-auto my-16 bg-white border border-slate-200 rounded-2xl p-8 text-center shadow-xs">
-        <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mx-auto mb-4 text-amber-600">
-          <ShieldAlert className="w-6 h-6" />
-        </div>
-        <h2 className="text-xl font-bold text-slate-900 font-archivo uppercase tracking-tight mb-2">
-          Company Member Access Only
-        </h2>
-        <p className="text-sm text-slate-500 mb-6">
-          SuperAdmin is restricted to platform-level administrative controls. Real-time inventory ledgers, SKU buffers, and warehouse allocations can only be viewed and managed by authenticated company tenant members.
-        </p>
-        <Link
-          href="/dashboard/superadmin"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-[#222026] hover:bg-[#19171C] text-white rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors"
-        >
-          Return to SuperAdmin Control Plane
-        </Link>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-[1720px] mx-auto w-full pb-16">
+      {isSuperAdmin && !isCompanyMember && (
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3.5 flex items-start sm:items-center justify-between gap-3 text-amber-900 text-xs shadow-2xs">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" strokeWidth={1.5} />
+            <span>
+              <strong>SuperAdmin operational audit mode:</strong> You are inspecting multi-facility inventory ledgers in view-only mode. Stock mutations and replenishment allocations require tenant-level company membership.
+            </span>
+          </div>
+          <Link
+            href="/dashboard/superadmin"
+            className="inline-flex items-center gap-1 font-medium text-amber-900 hover:text-amber-950 underline shrink-0 transition-colors"
+          >
+            Audit console
+          </Link>
+        </div>
+      )}
+
+      {/* Header Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Inventory Ledger
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+            Inventory ledger
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Real-time stock tracking, min-max thresholds, and warehouse allocation.
+          <p className="text-xs text-zinc-500 mt-1">
+            Real-time multi-facility stock tracking, FEFO batch thresholds, and bin coordinate allocation.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setFefoProductId(selectedItem ? selectedItem.ProductID : undefined);
+              setIsFefoOpen(true);
+            }}
+            className="h-9 px-3.5 gap-2 text-xs font-medium text-zinc-700 bg-white border border-zinc-200/80 hover:bg-zinc-50 hover:text-zinc-900 rounded-lg shadow-2xs transition-colors duration-150"
+          >
+            <BrainCircuit className="w-4 h-4 text-zinc-500" strokeWidth={1.5} />
+            FEFO advisor
+          </Button>
           <Link href="/dashboard/forecast">
             <Button
               size="sm"
               variant="outline"
-              className="h-9 gap-1.5 text-xs text-indigo-700 border-indigo-200 hover:bg-indigo-50 bg-white shadow-xs"
+              className="h-9 px-3.5 gap-2 text-xs font-medium text-zinc-700 bg-white border border-zinc-200/80 hover:bg-zinc-50 hover:text-zinc-900 rounded-lg shadow-2xs transition-colors duration-150"
             >
-              <BrainCircuit className="w-3.5 h-3.5 text-indigo-600" />
-              ML Forecaster & Auto-PO
+              <Clock className="w-4 h-4 text-zinc-500" strokeWidth={1.5} />
+              Demand forecast
             </Button>
           </Link>
           <Button
@@ -341,75 +621,166 @@ export default function InventoryPage() {
             size="sm"
             onClick={fetchData}
             disabled={loading}
-            className="h-9 gap-1.5 text-xs text-slate-700 bg-white"
+            className="h-9 px-3 gap-2 text-xs font-medium text-zinc-700 bg-white border border-zinc-200/80 hover:bg-zinc-50 hover:text-zinc-900 rounded-lg shadow-2xs transition-colors duration-150"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={cn("w-3.5 h-3.5 text-zinc-500", loading && "animate-spin")} strokeWidth={1.5} />
             Refresh
           </Button>
-          <Button
-            size="sm"
-            onClick={handleOpenCreate}
-            className="h-9 gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add Stock Entry
-          </Button>
+          {(!isSuperAdmin || isCompanyMember) && (
+            <Button
+              size="sm"
+              onClick={handleOpenCreate}
+              className="h-9 px-3.5 gap-2 text-xs font-medium bg-[#FD3706] hover:bg-[#E02E00] text-white rounded-lg shadow-2xs transition-colors duration-150"
+            >
+              <Plus className="w-3.5 h-3.5" strokeWidth={2} />
+              Add stock entry
+            </Button>
+          )}
         </div>
       </div>
 
+      {/* Operational Telemetry Summary Strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-2xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-zinc-500">Tracked SKUs</span>
+            <Boxes className="w-4 h-4 text-zinc-400" strokeWidth={1.5} />
+          </div>
+          <div className="mt-2">
+            <span className="text-2xl font-semibold tracking-tight text-zinc-900 font-mono tabular-nums">
+              {telemetry.totalSkus}
+            </span>
+            <p className="text-[11px] text-zinc-400 font-mono mt-0.5">Active ledger records</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-2xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-zinc-500">Available buffer</span>
+            <Package className="w-4 h-4 text-zinc-400" strokeWidth={1.5} />
+          </div>
+          <div className="mt-2">
+            <span className="text-2xl font-semibold tracking-tight text-zinc-900 font-mono tabular-nums">
+              {telemetry.totalUnits.toLocaleString()}
+            </span>
+            <p className="text-[11px] text-zinc-400 font-mono mt-0.5">Units across facilities</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-2xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-zinc-500">Reorder triggers</span>
+            <span className={cn("w-2 h-2 rounded-full", telemetry.lowStockCount > 0 ? "bg-amber-500" : "bg-emerald-500")} />
+          </div>
+          <div className="mt-2">
+            <span
+              className={cn(
+                "text-2xl font-semibold tracking-tight font-mono tabular-nums",
+                telemetry.lowStockCount > 0 ? "text-amber-700" : "text-zinc-900"
+              )}
+            >
+              {telemetry.lowStockCount}
+            </span>
+            <p className="text-[11px] text-zinc-400 font-mono mt-0.5">SKUs below safe threshold</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-2xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-zinc-500">Shelf-life runway</span>
+            <span className={cn("w-2 h-2 rounded-full", telemetry.expiringCount > 0 ? "bg-red-500" : "bg-emerald-500")} />
+          </div>
+          <div className="mt-2">
+            <span
+              className={cn(
+                "text-2xl font-semibold tracking-tight font-mono tabular-nums",
+                telemetry.expiringCount > 0 ? "text-red-700" : "text-zinc-900"
+              )}
+            >
+              {telemetry.expiringCount}
+            </span>
+            <p className="text-[11px] text-zinc-400 font-mono mt-0.5">Expiring or quarantined batches</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Ledger Table */}
       <GenericEntityTable
         data={inventories}
         columns={tableColumns}
         idKey="InventoryID"
-        searchPlaceholder="Search inventory..."
+        searchPlaceholder="Search inventory by SKU, warehouse, or batch..."
         selectedItem={selectedItem}
         onSelect={(item) => setSelectedItem(item)}
-        onEdit={handleOpenEdit}
-        onDelete={handleDelete}
+        onEdit={isSuperAdmin && !isCompanyMember ? undefined : handleOpenEdit}
+        onDelete={isSuperAdmin && !isCompanyMember ? undefined : handleDelete}
         emptyMessage="No inventory entries found. Allocate your first stock item."
       />
 
+      {/* Side Inspector Drawer */}
       <GenericEntityDrawer
-        title={selectedItem ? getProductName(selectedItem.ProductID) : "Stock Details"}
-        subtitle="Inventory Record"
+        title={selectedItem ? getProductName(selectedItem.ProductID) : "Stock details"}
+        subtitle="Inventory record"
         item={selectedItem}
-        icon={<Layers className="w-5 h-5 text-blue-600" />}
+        icon={<Layers className="w-4 h-4 text-zinc-600" strokeWidth={1.5} />}
         fields={drawerFields}
+        customActions={(inv) => (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setFefoProductId(inv.ProductID);
+              setIsFefoOpen(true);
+            }}
+            className="h-8 px-3 gap-1.5 text-xs font-medium text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 rounded-lg shadow-2xs transition-colors cursor-pointer"
+          >
+            <BrainCircuit className="w-3.5 h-3.5 text-zinc-500" strokeWidth={1.5} />
+            FEFO pick plan
+          </Button>
+        )}
         relatedLinks={[
           {
-            label: "ML Stockout Risk Forecaster & Auto-PO",
-            sublabel: "Run XGBoost predictive risk modeling and automated purchase order execution",
+            label: "Demand forecaster & auto-PO",
+            sublabel: "Run predictive risk modeling and automated purchase order execution",
             href: (inv) => `/dashboard/forecast?q=${encodeURIComponent(getProductName(inv.ProductID))}`,
           },
           {
-            label: "Product Catalog Master",
+            label: "Product catalog",
             sublabel: "View complete product specifications, pricing, and packaging",
             href: (inv) => `/dashboard/product?q=${encodeURIComponent(getProductName(inv.ProductID))}`,
           },
           {
-            label: "Warehouse Facility Details",
-            sublabel: "Inspect warehouse specifications and location hub",
+            label: "Warehouse facility",
+            sublabel: "Inspect warehouse specifications and bin topology",
             href: (inv) => `/dashboard/warehouse?q=${encodeURIComponent(getWarehouseName(inv.WarehouseID))}`,
           },
           {
-            label: "Active Stock Transfers",
-            sublabel: "Check inter-warehouse shipments for this product",
+            label: "Stock transfers",
+            sublabel: "Check inter-warehouse shipments and transfers for this SKU",
             href: (inv) => `/dashboard/transfer?q=${encodeURIComponent(getProductName(inv.ProductID))}`,
           },
         ]}
         onClose={() => setSelectedItem(null)}
-        onEdit={handleOpenEdit}
-        onDelete={handleDelete}
+        onEdit={isSuperAdmin && !isCompanyMember ? undefined : handleOpenEdit}
+        onDelete={isSuperAdmin && !isCompanyMember ? undefined : handleDelete}
       />
 
       <GenericEntityModal
         isOpen={isModalOpen}
-        title="Inventory Stock"
+        title="Inventory stock"
         item={targetItem}
         mode={modalMode}
         fields={modalFields}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleSave}
+      />
+
+      <FefoAdvisorModal
+        isOpen={isFefoOpen}
+        onClose={() => setIsFefoOpen(false)}
+        products={products}
+        warehouses={warehouses}
+        initialProductId={fefoProductId}
       />
 
       <Toaster />

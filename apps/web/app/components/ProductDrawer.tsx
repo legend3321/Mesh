@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import type { Product } from "@mesh/types";
 import {
@@ -22,8 +22,8 @@ import Link from "next/link";
 interface ProductDrawerProps {
   product: Product | null;
   onClose: () => void;
-  onEdit: (product: Product) => void;
-  onDelete: (product: Product) => void;
+  onEdit?: (product: Product) => void;
+  onDelete?: (product: Product) => void;
 }
 
 export default function ProductDrawer({
@@ -34,10 +34,65 @@ export default function ProductDrawer({
 }: ProductDrawerProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Escape key listener & Focus Trap
+  useEffect(() => {
+    if (!product) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+
+      if (e.key === "Tab" && drawerRef.current) {
+        const focusableElements = drawerRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    const prevActiveElement = document.activeElement as HTMLElement | null;
+    const timer = setTimeout(() => {
+      if (drawerRef.current) {
+        const focusableElements = drawerRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length > 0) {
+          focusableElements[0].focus();
+        }
+      }
+    }, 50);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      clearTimeout(timer);
+      prevActiveElement?.focus();
+    };
+  }, [product, onClose]);
 
   if (!product || !mounted) return null;
 
@@ -50,7 +105,13 @@ export default function ProductDrawer({
       />
 
       {/* Slide-out Drawer Panel */}
-      <aside className="fixed inset-y-0 right-0 z-10 w-full sm:w-[460px] md:w-[500px] bg-white shadow-2xl border-l border-slate-200 flex flex-col transform transition-transform duration-300 ease-in-out">
+      <div
+        ref={drawerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="product-drawer-title"
+        className="fixed inset-y-0 right-0 z-10 w-full sm:w-[460px] md:w-[500px] bg-white shadow-2xl border-l border-slate-200 flex flex-col transform transition-transform duration-300 ease-in-out"
+      >
         {/* Header */}
         <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -61,7 +122,10 @@ export default function ProductDrawer({
               <span className="text-xs font-semibold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
                 {product.ProductCategory || "General"}
               </span>
-              <h2 className="text-xl font-bold text-slate-900 mt-1 leading-snug">
+              <h2
+                id="product-drawer-title"
+                className="text-xl font-bold text-slate-900 mt-1 leading-snug"
+              >
                 {product.ProductName}
               </h2>
             </div>
@@ -74,6 +138,7 @@ export default function ProductDrawer({
             }}
             className="text-slate-400 hover:text-slate-700 p-1.5 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
             title="Close panel"
+            aria-label="Close panel"
           >
             <X className="w-5 h-5" />
           </button>
@@ -235,7 +300,7 @@ export default function ProductDrawer({
 
         {/* Footer Actions */}
         <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex flex-col gap-2">
-          {confirmDelete ? (
+          {confirmDelete && onDelete ? (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg space-y-2">
               <div className="flex items-center gap-2 text-red-800 text-xs font-semibold">
                 <AlertTriangle className="w-4 h-4 text-red-600" />
@@ -262,26 +327,30 @@ export default function ProductDrawer({
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                className="flex-1 border-slate-300 hover:bg-slate-100 text-slate-800"
-                onClick={() => onEdit(product)}
-              >
-                <Edit2 className="w-4 h-4 mr-2" />
-                Edit Product
-              </Button>
-              <Button
-                variant="destructive"
-                className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
-                onClick={() => setConfirmDelete(true)}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
-              </Button>
+              {onEdit && (
+                <Button
+                  variant="outline"
+                  className="flex-1 border-slate-300 hover:bg-slate-100 text-slate-800"
+                  onClick={() => onEdit(product)}
+                >
+                  <Edit2 className="w-4 h-4 mr-2" />
+                  Edit Product
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  variant="destructive"
+                  className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
+              )}
             </div>
           )}
         </div>
-      </aside>
+      </div>
     </div>,
     document.body
   );

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import api from "@/app/assets/api";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw, Coins, DollarSign, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { Plus, RefreshCw, Coins, DollarSign, CheckCircle2, Clock, XCircle, ShieldAlert, ArrowUpRight } from "lucide-react";
 import GenericEntityTable, { ColumnConfig } from "@/app/components/crud/GenericEntityTable";
 import GenericEntityDrawer, { DrawerField } from "@/app/components/crud/GenericEntityDrawer";
 import GenericEntityModal, { ModalFormField } from "@/app/components/crud/GenericEntityModal";
@@ -38,12 +38,17 @@ export default function PaymentPage() {
         api.get("/order/getAll"),
         api.get("/delivery/getAll"),
       ]);
-      setPayments(payRes.data);
+      const normalizedPayments = (payRes.data || []).map((p: any) => ({
+        ...p,
+        DeliveryID: p.DeliveryID || p.DeileveryID || null,
+        Delivery: p.Delivery || p.Dilevery || null,
+      }));
+      setPayments(normalizedPayments);
       setOrders(ordRes.data);
       setDeliveries(delRes.data);
 
       if (selectedItem) {
-        const found = payRes.data.find((p: Payment) => p.PaymentID === selectedItem.PaymentID);
+        const found = normalizedPayments.find((p: Payment) => p.PaymentID === selectedItem.PaymentID);
         setSelectedItem(found || null);
       }
     } catch (err: any) {
@@ -64,7 +69,10 @@ export default function PaymentPage() {
   };
 
   const handleOpenEdit = (p: Payment) => {
-    setTargetItem(p);
+    setTargetItem({
+      ...p,
+      DeliveryID: p.DeliveryID || (p as any).DeileveryID || undefined,
+    });
     setModalMode("edit");
     setIsModalOpen(true);
   };
@@ -120,9 +128,16 @@ export default function PaymentPage() {
     switch (status) {
       case "COMPLETED":
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-teal-600">
-            <span className="w-1.5 h-1.5 rounded-xs bg-teal-600 shrink-0" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-emerald-600">
+            <span className="w-1.5 h-1.5 rounded-xs bg-emerald-600 shrink-0" />
             Completed
+          </span>
+        );
+      case "PENDING_APPROVAL":
+        return (
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-300 shadow-2xs">
+            <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0 animate-pulse" />
+            Pending Approval
           </span>
         );
       case "PROCESSING":
@@ -134,8 +149,8 @@ export default function PaymentPage() {
         );
       case "CANCELLED":
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-rose-600">
-            <span className="w-1.5 h-1.5 rounded-xs bg-rose-600 shrink-0" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-red-600">
+            <span className="w-1.5 h-1.5 rounded-xs bg-red-600 shrink-0" />
             Cancelled
           </span>
         );
@@ -154,11 +169,27 @@ export default function PaymentPage() {
       key: "PaymentAmount",
       header: "Amount",
       sortable: true,
-      render: (p) => (
-        <span className="font-bold text-slate-900 text-sm">
-          ${p.PaymentAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-        </span>
-      ),
+      render: (p) => {
+        const isHighValue = p.PaymentAmount >= 10000;
+        return (
+          <div className="flex flex-col gap-1 items-start">
+            <span className="font-bold text-slate-900 text-sm font-mono">
+              ${p.PaymentAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </span>
+            {isHighValue && (
+              <Link
+                href="/dashboard/approval"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold tracking-tight bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 transition-colors"
+                title="Transaction amount exceeds $10,000 statutory limit. Maker-Checker approval required."
+              >
+                <ShieldAlert className="w-3 h-3 text-amber-600 shrink-0" />
+                <span>High-Value (SoD) →</span>
+              </Link>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "PaymentStatus",
@@ -199,14 +230,15 @@ export default function PaymentPage() {
             </Link>
           );
         }
-        if (p.DeliveryID) {
+        const delId = p.DeliveryID || (p as any).DeileveryID;
+        if (delId) {
           return (
             <Link
-              href={`/dashboard/delivery?id=${p.DeliveryID}`}
+              href={`/dashboard/delivery?id=${delId}`}
               className="text-xs font-mono text-emerald-600 hover:text-emerald-800 hover:underline bg-emerald-50 px-1.5 py-0.5 rounded"
               onClick={(e) => e.stopPropagation()}
             >
-              DEL-{p.DeliveryID.slice(-6).toUpperCase()} →
+              DEL-{delId.slice(-6).toUpperCase()} →
             </Link>
           );
         }
@@ -218,7 +250,33 @@ export default function PaymentPage() {
   const drawerFields: DrawerField<Payment>[] = [
     {
       label: "Payment Amount",
-      render: (p) => `$${p.PaymentAmount.toFixed(2)} USD`,
+      render: (p) => {
+        const isHighValue = p.PaymentAmount >= 10000;
+        return (
+          <div className="space-y-2">
+            <span className="font-mono font-extrabold text-sm text-slate-900 block">
+              ${p.PaymentAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })} USD
+            </span>
+            {isHighValue && (
+              <div className="p-3 bg-amber-50/90 rounded-xl border border-amber-200/90 text-xs text-amber-900 flex flex-col gap-1.5">
+                <div className="flex items-center gap-1.5 font-bold text-amber-800">
+                  <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>High-Value Transaction (Maker-Checker Approval Required)</span>
+                </div>
+                <p className="text-[11px] text-amber-700 leading-relaxed">
+                  Settlements and disbursements valued at or above $10,000 require independent dual-control authorization before ledger clearance.
+                </p>
+                <Link
+                  href="/dashboard/approval"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-amber-900 underline hover:text-amber-950 mt-0.5"
+                >
+                  Inspect Approval Queue <ArrowUpRight className="w-3 h-3" />
+                </Link>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       label: "Current Status",
@@ -238,7 +296,7 @@ export default function PaymentPage() {
     },
     {
       label: "Related Delivery ID",
-      render: (p) => p.DeliveryID || "None",
+      render: (p) => p.DeliveryID || (p as any).DeileveryID || "None",
     },
     { label: "Payment Transaction ID", key: "PaymentID" },
   ];
@@ -259,6 +317,7 @@ export default function PaymentPage() {
       defaultValue: "COMPLETED",
       options: [
         { label: "COMPLETED", value: "COMPLETED" },
+        { label: "PENDING_APPROVAL", value: "PENDING_APPROVAL" },
         { label: "PROCESSING", value: "PROCESSING" },
         { label: "INITIATED", value: "INITIATED" },
         { label: "CANCELLED", value: "CANCELLED" },
@@ -325,13 +384,31 @@ export default function PaymentPage() {
           <Button
             size="sm"
             onClick={handleOpenCreate}
-            className="h-9 gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+            className="h-9 gap-1.5 text-xs bg-[#FD3706] hover:bg-[#E02E00] text-white shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
             Record Payment
           </Button>
         </div>
       </div>
+
+      {/* High-Value / Dual-Control Governance Alert Banner */}
+      {payments.some((p) => p.PaymentAmount >= 10000 || p.PaymentStatus === "PENDING_APPROVAL") && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 px-4 flex items-center justify-between gap-3 text-amber-900 text-xs shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>
+              <strong>Maker-Checker Dual Control Active:</strong> High-value payment settlements (&ge; $10,000) and pending disbursements require segregated approval sign-off.
+            </span>
+          </div>
+          <Link
+            href="/dashboard/approval"
+            className="inline-flex items-center gap-1 font-semibold text-amber-900 hover:text-amber-950 underline shrink-0 whitespace-nowrap"
+          >
+            Review Approval Queue <ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
 
       <GenericEntityTable
         data={payments}
@@ -361,12 +438,12 @@ export default function PaymentPage() {
                 },
               ]
             : []),
-          ...(selectedItem?.DeliveryID
+          ...((selectedItem?.DeliveryID || (selectedItem as any)?.DeileveryID)
             ? [
                 {
                   label: "Associated Outbound Delivery",
-                  sublabel: `Inspect delivery manifest DEL-${selectedItem.DeliveryID.slice(-6).toUpperCase()}`,
-                  href: (p: Payment) => `/dashboard/delivery?id=${p.DeliveryID}`,
+                  sublabel: `Inspect delivery manifest DEL-${(selectedItem?.DeliveryID || (selectedItem as any)?.DeileveryID || "").slice(-6).toUpperCase()}`,
+                  href: (p: Payment) => `/dashboard/delivery?id=${p.DeliveryID || (p as any).DeileveryID}`,
                 },
               ]
             : []),

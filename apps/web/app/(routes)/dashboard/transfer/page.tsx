@@ -117,6 +117,24 @@ export default function TransferPage() {
     }
   };
 
+  const handleReceive = async (t: Transfer) => {
+    try {
+      const res = await api.post("/transfer/receive", { TransferID: t.TransferID });
+      toast({
+        title: "Goods Receipt Completed",
+        description: `Successfully accepted ${t.TransferQuantity} units into destination warehouse.`,
+      });
+      await fetchData();
+      if (res.data) setSelectedItem(res.data);
+    } catch (err: any) {
+      toast({
+        title: "Intake Failed",
+        description: err?.response?.data?.error || err.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDelete = async (t: Transfer) => {
     try {
       await api.delete(`/transfer/delete/${t.TransferID}`);
@@ -201,16 +219,29 @@ export default function TransferPage() {
       key: "Status",
       header: "Transit State",
       render: (t) =>
-        t.RecievedDate ? (
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-teal-600">
-            <span className="w-1.5 h-1.5 rounded-xs bg-teal-600 shrink-0" />
+        t.RecievedDate || t.TransferStatus === "COMPLETED" ? (
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-emerald-600">
+            <span className="w-1.5 h-1.5 rounded-xs bg-emerald-600 shrink-0" />
             Received
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-600">
-            <span className="w-1.5 h-1.5 rounded-xs bg-amber-600 shrink-0" />
-            In Transit
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-600">
+              <span className="w-1.5 h-1.5 rounded-xs bg-amber-600 shrink-0" />
+              In Transit
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 px-2 text-[10px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200 cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleReceive(t);
+              }}
+            >
+              Receive Intake
+            </Button>
+          </div>
         ),
     },
   ];
@@ -237,8 +268,24 @@ export default function TransferPage() {
       render: (t) => (t.SentDate ? new Date(t.SentDate).toLocaleString() : "—"),
     },
     {
-      label: "Date Received at Destination",
-      render: (t) => (t.RecievedDate ? new Date(t.RecievedDate).toLocaleString() : "Pending In-transit"),
+      label: "Goods Receipt Status",
+      render: (t) =>
+        t.RecievedDate || t.TransferStatus === "COMPLETED" ? (
+          <div className="text-xs text-emerald-600 font-semibold">
+            Received ({new Date(t.RecievedDate!).toLocaleString()})
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-amber-600 font-medium">In Transit</span>
+            <Button
+              size="sm"
+              className="h-6 px-2.5 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+              onClick={() => handleReceive(t)}
+            >
+              Confirm Intake
+            </Button>
+          </div>
+        ),
     },
     { label: "Transfer Record ID", key: "TransferID" },
   ];
@@ -319,7 +366,7 @@ export default function TransferPage() {
           <Button
             size="sm"
             onClick={handleOpenCreate}
-            className="h-9 gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+            className="h-9 gap-1.5 text-xs bg-[#FD3706] hover:bg-[#E02E00] text-white shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
             Initiate Transfer

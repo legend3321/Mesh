@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { Search, ChevronDown, User, LogOut, Building, ShieldCheck, Menu } from "lucide-react";
+import { Search, ChevronDown, LogOut, Building, ShieldCheck, Menu } from "lucide-react";
 import { useCompany } from "./CompanyContext";
 import { useSidebar } from "./SidebarContext";
-import MeshLogoSvg from "./MeshLogoSvg";
 import GlobalSearchModal from "./GlobalSearchModal";
+import FacilityCommandPalette from "./FacilityCommandPalette";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,17 +18,57 @@ import {
 
 export default function Header() {
   const { data: session } = useSession();
-  const { currentCompany, activeCompanyId, isAllCompanies, companies, setCurrentCompanyId } = useCompany();
+  const { currentCompany, isAllCompanies } = useCompany();
   const { toggleMobile } = useSidebar();
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [facilityPaletteOpen, setFacilityPaletteOpen] = useState(false);
+  const [isMac, setIsMac] = useState(true);
+  const [activeFacilityLabelState, setActiveFacilityLabelState] = useState<string | null>(null);
 
   const currentUserRole = ((session?.user as any)?.userRole || "EMPLOYEE") as string;
   const isSuperAdmin = currentUserRole === "SUPERADMIN";
-  const userGroupName =
-    (session?.user as any)?.companyGroup?.groupName ||
-    companies[0]?.companyGroup?.groupName;
   const userName = session?.user?.name || "Terminal Operator";
   const userEmail = session?.user?.email || "dispatch@meshlogistics.io";
+
+  useEffect(() => {
+    if (typeof navigator !== "undefined") {
+      setIsMac(/Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent));
+    }
+
+    const updateActiveFacility = () => {
+      try {
+        const activeRaw = localStorage.getItem("mesh_active_facility");
+        if (activeRaw) {
+          const parsed = JSON.parse(activeRaw);
+          setActiveFacilityLabelState(
+            parsed.code ? `${parsed.code} · ${parsed.name}` : parsed.name
+          );
+        } else {
+          setActiveFacilityLabelState(null);
+        }
+      } catch {
+        setActiveFacilityLabelState(null);
+      }
+    };
+
+    updateActiveFacility();
+    window.addEventListener("mesh-facility-changed", updateActiveFacility);
+    window.addEventListener("mesh-company-changed", updateActiveFacility);
+    return () => {
+      window.removeEventListener("mesh-facility-changed", updateActiveFacility);
+      window.removeEventListener("mesh-company-changed", updateActiveFacility);
+    };
+  }, []);
+
+  const shortcutLabel = isMac ? "⌘K" : "Ctrl+K";
+
+  const displayFacilityName = isAllCompanies
+    ? "All Facilities / Group Entities"
+    : activeFacilityLabelState
+    ? activeFacilityLabelState
+    : currentCompany
+    ? currentCompany.companyName
+    : "All Facilities / Group Entities";
 
   return (
     <header className="sticky top-0 z-30 w-full h-16 bg-white/95 backdrop-blur-md border-b border-[#E5E7EB] px-4 sm:px-6 flex items-center justify-between gap-4 transition-all">
@@ -61,63 +101,31 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Multi-Tenant Company Selector Capsule / Platform Control Badge */}
-        {isSuperAdmin ? (
-          <div className="pl-3 border-l border-slate-200 shrink-0">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs font-semibold text-amber-800 whitespace-nowrap">
+        {/* Global Facility Command Palette Trigger Capsule */}
+        <div className="pl-3 border-l border-slate-200 shrink-0 flex items-center gap-2">
+          {isSuperAdmin && (
+            <span className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs font-semibold text-amber-800 whitespace-nowrap">
               <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span>Platform Backend Control</span>
+              <span>Backend Control</span>
             </span>
-          </div>
-        ) : companies.length > 0 ? (
-          <div className="pl-3 border-l border-slate-200 shrink-0">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#F3F4F7] hover:bg-slate-200 text-xs font-medium text-[#222026] transition-colors whitespace-nowrap cursor-pointer"
-                >
-                  <Building className="w-3.5 h-3.5 text-[#FD3706] shrink-0" />
-                  <span className="max-w-[120px] sm:max-w-[180px] truncate font-medium">
-                    {isAllCompanies
-                      ? "All Group Entities"
-                      : currentCompany
-                      ? currentCompany.companyName
-                      : "Select Facility"}
-                  </span>
-                  <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64 bg-white shadow-lg border border-slate-200">
-                <DropdownMenuLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">
-                  {userGroupName
-                    ? `Group · ${userGroupName}`
-                    : "Switch Active Entity"}
-                </DropdownMenuLabel>
-                <DropdownMenuItem
-                  onClick={() => setCurrentCompanyId("all")}
-                  className={`text-xs cursor-pointer ${isAllCompanies ? "font-bold text-[#FD3706] bg-slate-50" : "text-slate-700"}`}
-                >
-                  🌐 All Group Entities (Aggregated)
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {companies.map((c) => (
-                  <DropdownMenuItem
-                    key={c.companyId}
-                    onClick={() => setCurrentCompanyId(c.companyId)}
-                    className={`text-xs cursor-pointer ${
-                      activeCompanyId === c.companyId ? "font-bold text-[#FD3706] bg-slate-50" : "text-slate-700"
-                    }`}
-                  >
-                    <Building className="w-3.5 h-3.5 mr-2 text-slate-400 shrink-0" />
-                    <span className="truncate">{c.companyName}</span>
-                    <span className="ml-auto text-[10px] font-mono text-slate-400">{c.companyCode}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        ) : null}
+          )}
+
+          <button
+            type="button"
+            onClick={() => setFacilityPaletteOpen(true)}
+            className="inline-flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#F3F4F7] hover:bg-slate-200/90 text-xs font-medium text-[#222026] border border-transparent hover:border-slate-300 transition-all cursor-pointer group shadow-2xs"
+            title={`Global Facility Command Palette (${shortcutLabel})`}
+            aria-label={`Open Global Facility Command Palette (${shortcutLabel})`}
+          >
+            <Building className="w-3.5 h-3.5 text-[#FD3706] shrink-0 transition-transform group-hover:scale-110" />
+            <span className="max-w-[120px] sm:max-w-[180px] md:max-w-[220px] lg:max-w-[260px] truncate font-medium">
+              {displayFacilityName}
+            </span>
+            <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono font-semibold bg-white border border-slate-200 rounded text-slate-500 shadow-2xs ml-0.5">
+              {shortcutLabel}
+            </kbd>
+          </button>
+        </div>
       </div>
 
       {/* Right Controls: Search Capsule, Currency Pill, User Profile (NO Notification Icon) */}
@@ -126,15 +134,15 @@ export default function Header() {
         <button
           type="button"
           onClick={() => setSearchModalOpen(true)}
-          className="hidden lg:flex items-center justify-between bg-[#F3F4F7] hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-transparent hover:border-slate-300 transition-all text-xs text-slate-500 w-48 xl:w-64 cursor-pointer"
-          title="Search Mesh platform (⌘K / Ctrl+K)"
+          className="hidden lg:flex items-center justify-between bg-[#F3F4F7] hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-transparent hover:border-slate-300 transition-all text-xs text-slate-500 w-44 xl:w-60 cursor-pointer"
+          title="Search Mesh platform (/ or ⌘/)"
         >
           <div className="flex items-center gap-2 truncate">
             <Search className="w-4 h-4 text-slate-400 shrink-0" />
             <span className="truncate">Search SKUs, POs, Depots...</span>
           </div>
           <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono font-semibold bg-white border border-slate-200 rounded text-slate-500 shadow-2xs">
-            <span className="text-xs">⌘</span>K
+            /
           </kbd>
         </button>
 
@@ -148,11 +156,6 @@ export default function Header() {
         >
           <Search className="w-5 h-5 text-slate-600" />
         </button>
-
-        {/* Currency Capsule */}
-        <div className="hidden sm:inline-flex items-center px-2.5 py-1.5 rounded-lg bg-[#F3F4F7] text-[#222026] font-mono text-xs font-semibold border border-transparent whitespace-nowrap shrink-0">
-          <span>USD $</span>
-        </div>
 
         {/* User Profile Capsule */}
         <DropdownMenu>
@@ -194,6 +197,9 @@ export default function Header() {
 
       {/* Global Command Palette Search Modal */}
       <GlobalSearchModal open={searchModalOpen} onOpenChange={setSearchModalOpen} />
+
+      {/* Global Facility Command Palette Modal */}
+      <FacilityCommandPalette open={facilityPaletteOpen} onOpenChange={setFacilityPaletteOpen} />
     </header>
   );
 }

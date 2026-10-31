@@ -159,8 +159,8 @@ export default function CompanyManagementPage() {
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-slate-900">{row.companyName}</span>
                 {isCurrent && (
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-teal-600">
-                    <span className="w-1.5 h-1.5 rounded-xs bg-teal-600 shrink-0" />
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-600">
+                    <span className="w-1.5 h-1.5 rounded-xs bg-emerald-600 shrink-0" />
                     Active
                   </span>
                 )}
@@ -327,7 +327,7 @@ export default function CompanyManagementPage() {
             <Button
               size="sm"
               onClick={handleOpenCreate}
-              className="h-9 gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium"
+              className="h-9 gap-1.5 text-xs bg-[#FD3706] hover:bg-[#E02E00] text-white font-medium"
             >
               <Plus className="w-3.5 h-3.5" />
               Add Company

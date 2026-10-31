@@ -20,9 +20,8 @@ export default function TransactionPage() {
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<Transaction | null>(null);
 
-  // Modal
+  // Modal (Append-only logs)
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [targetItem, setTargetItem] = useState<Transaction | null>(null);
 
   useEffect(() => {
@@ -51,13 +50,6 @@ export default function TransactionPage() {
 
   const handleOpenCreate = () => {
     setTargetItem(null);
-    setModalMode("create");
-    setIsModalOpen(true);
-  };
-
-  const handleOpenEdit = (t: Transaction) => {
-    setTargetItem(t);
-    setModalMode("edit");
     setIsModalOpen(true);
   };
 
@@ -67,43 +59,13 @@ export default function TransactionPage() {
       UserID: formData.UserID || (session?.user as any)?.id || "6aca01f97635e96df4e1b2bd",
     };
 
-    if (modalMode === "create") {
-      const res = await api.post("/transaction/add", payload);
-      toast({
-        title: "Transaction logged",
-        description: "Audit trail entry recorded.",
-      });
-      await fetchTransactions();
-      if (res.data) setSelectedItem(res.data);
-    } else {
-      const res = await api.patch("/transaction/edit", payload);
-      toast({
-        title: "Transaction updated",
-        description: "Log record updated.",
-      });
-      await fetchTransactions();
-      if (res.data) setSelectedItem(res.data);
-    }
-  };
-
-  const handleDelete = async (t: Transaction) => {
-    try {
-      await api.delete(`/transaction/delete/${t.TransactionID}`);
-      toast({
-        title: "Record deleted",
-        description: "Transaction log removed.",
-      });
-      if (selectedItem?.TransactionID === t.TransactionID) {
-        setSelectedItem(null);
-      }
-      await fetchTransactions();
-    } catch (err: any) {
-      toast({
-        title: "Delete failed",
-        description: err?.response?.data?.error || err.message,
-        variant: "destructive",
-      });
-    }
+    const res = await api.post("/transaction/add", payload);
+    toast({
+      title: "Transaction logged",
+      description: "Immutable audit trail entry recorded.",
+    });
+    await fetchTransactions();
+    if (res.data) setSelectedItem(res.data);
   };
 
   const tableColumns: ColumnConfig<Transaction>[] = [
@@ -189,7 +151,7 @@ export default function TransactionPage() {
           <Button
             size="sm"
             onClick={handleOpenCreate}
-            className="h-9 gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+            className="h-9 gap-1.5 text-xs bg-[#FD3706] hover:bg-[#E02E00] text-white shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
             Log Transaction
@@ -205,8 +167,6 @@ export default function TransactionPage() {
         searchPlaceholder="Search audit log entries..."
         selectedItem={selectedItem}
         onSelect={(item) => setSelectedItem(item)}
-        onEdit={handleOpenEdit}
-        onDelete={handleDelete}
         emptyMessage="No transaction logs found. System events will be displayed here."
       />
 
@@ -217,15 +177,13 @@ export default function TransactionPage() {
         icon={<ShieldCheck className="w-5 h-5 text-blue-600" />}
         fields={drawerFields}
         onClose={() => setSelectedItem(null)}
-        onEdit={handleOpenEdit}
-        onDelete={handleDelete}
       />
 
       <GenericEntityModal
         isOpen={isModalOpen}
         title="Transaction Log"
         item={targetItem}
-        mode={modalMode}
+        mode="create"
         fields={modalFields}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleSave}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   ColumnDef,
@@ -22,21 +22,15 @@ import {
   Edit2,
   Trash2,
   Eye,
-  Thermometer,
   Search,
   ChevronLeft,
   ChevronRight,
-  User,
-  MapPin,
-  Calendar,
   Flag,
-  Bookmark,
   RotateCcw,
 } from "lucide-react";
 
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -69,42 +63,46 @@ export default function ProductTable({
   onEditProduct,
   onDeleteProduct,
 }: ProductTableProps) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
-  const [globalFilter, setGlobalFilter] = React.useState("");
-  const [priorityFilter, setPriorityFilter] = React.useState("ALL");
-  const [bookmarkedOnly, setBookmarkedOnly] = React.useState(false);
-  const [selectedRowIds, setSelectedRowIds] = React.useState<Set<string>>(new Set());
-  const [pagination, setPagination] = React.useState<PaginationState>({
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("ALL");
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
+  const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
   });
 
-  const columns: ColumnDef<Product, any>[] = [
+  const columns = useMemo<ColumnDef<Product, any>[]>(() => [
     {
       id: "select",
       header: () => (
-        <input
-          type="checkbox"
-          checked={products.length > 0 && selectedRowIds.size === products.length}
-          onChange={(e) => {
-            if (e.target.checked) {
-              setSelectedRowIds(new Set(products.map((p) => p.ProductID)));
-            } else {
-              setSelectedRowIds(new Set());
-            }
-          }}
-          className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-        />
+        <div className="flex items-center justify-center">
+          <input
+            type="checkbox"
+            aria-label="Select all products on page"
+            checked={products.length > 0 && selectedRowIds.size === products.length}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setSelectedRowIds(new Set(products.map((p) => p.ProductID)));
+              } else {
+                setSelectedRowIds(new Set());
+              }
+            }}
+            className="w-3.5 h-3.5 rounded border-zinc-300 accent-[#FD3706] text-zinc-900 focus:ring-1 focus:ring-zinc-900 cursor-pointer"
+          />
+        </div>
       ),
       cell: ({ row }) => {
         const id = row.original.ProductID;
         const isChecked = selectedRowIds.has(id);
+        const productLabel = row.original.ProductName || row.original.ProductCode || id;
         return (
-          <div onClick={(e) => e.stopPropagation()}>
+          <div onClick={(e) => e.stopPropagation()} className="flex items-center justify-center">
             <input
               type="checkbox"
+              aria-label={`Select product ${productLabel}`}
               checked={isChecked}
               onChange={(e) => {
                 const next = new Set(selectedRowIds);
@@ -112,7 +110,7 @@ export default function ProductTable({
                 else next.delete(id);
                 setSelectedRowIds(next);
               }}
-              className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              className="w-3.5 h-3.5 rounded border-zinc-300 accent-[#FD3706] text-zinc-900 focus:ring-1 focus:ring-zinc-900 cursor-pointer"
             />
           </div>
         );
@@ -125,15 +123,15 @@ export default function ProductTable({
         <Button
           variant="ghost"
           size="sm"
-          className="-ml-3 h-7 text-xs font-semibold text-slate-700 hover:text-slate-900"
+          className="-ml-3 h-7 text-xs font-semibold text-zinc-700 hover:text-zinc-900 hover:bg-transparent"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           SKU / Code
-          <ArrowUpDown className="ml-1.5 h-3 w-3 text-slate-400" />
+          <ArrowUpDown className="ml-1.5 h-3 w-3 text-zinc-400" />
         </Button>
       ),
       cell: ({ row }) => (
-        <span className="font-mono text-xs font-medium bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded border border-slate-200/60">
+        <span className="font-mono tabular-nums text-xs font-medium bg-zinc-100 text-zinc-800 px-1.5 py-0.5 rounded border border-zinc-200/80">
           {row.original.ProductCode}
         </span>
       ),
@@ -145,21 +143,23 @@ export default function ProductTable({
         <Button
           variant="ghost"
           size="sm"
-          className="-ml-3 h-7 text-xs font-semibold text-slate-700 hover:text-slate-900"
+          className="-ml-3 h-7 text-xs font-semibold text-zinc-700 hover:text-zinc-900 hover:bg-transparent"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Product Name
-          <ArrowUpDown className="ml-1.5 h-3 w-3 text-slate-400" />
+          Product name
+          <ArrowUpDown className="ml-1.5 h-3 w-3 text-zinc-400" />
         </Button>
       ),
       cell: ({ row }) => (
         <div className="flex flex-col">
-          <span className="font-medium text-xs text-slate-900 hover:text-blue-600 transition-colors">
+          <span className="font-medium text-xs text-zinc-900 hover:text-zinc-700 transition-colors duration-150">
             {row.original.ProductName}
           </span>
-          <span className="text-[10px] text-slate-400 font-mono">
-            {row.original.BarCode}
-          </span>
+          {row.original.BarCode && (
+            <span className="text-[11px] text-zinc-400 font-mono tabular-nums">
+              {row.original.BarCode}
+            </span>
+          )}
         </div>
       ),
     },
@@ -168,7 +168,7 @@ export default function ProductTable({
       accessorKey: "ProductCategory",
       header: "Category",
       cell: ({ row }) => (
-        <span className="text-xs font-medium text-slate-700">
+        <span className="text-xs font-medium text-zinc-700">
           {row.original.ProductCategory}
         </span>
       ),
@@ -180,15 +180,15 @@ export default function ProductTable({
         <Button
           variant="ghost"
           size="sm"
-          className="-ml-3 h-7 text-xs font-semibold text-slate-700 hover:text-slate-900"
+          className="-ml-3 h-7 text-xs font-semibold text-zinc-700 hover:text-zinc-900 hover:bg-transparent"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Unit Price
-          <ArrowUpDown className="ml-1.5 h-3 w-3 text-slate-400" />
+          Unit price
+          <ArrowUpDown className="ml-1.5 h-3 w-3 text-zinc-400" />
         </Button>
       ),
       cell: ({ row }) => (
-        <span className="text-xs font-semibold text-slate-900">
+        <span className="font-mono tabular-nums text-xs font-medium text-zinc-900">
           ${Number(row.original.SellPrice || 0).toFixed(2)}
         </span>
       ),
@@ -198,7 +198,7 @@ export default function ProductTable({
       accessorKey: "PackedWeight",
       header: "Weight",
       cell: ({ row }) => (
-        <span className="text-xs text-slate-600">
+        <span className="font-mono tabular-nums text-xs text-zinc-600">
           {row.original.PackedWeight ? `${row.original.PackedWeight} kg` : "—"}
         </span>
       ),
@@ -210,12 +210,12 @@ export default function ProductTable({
         const p = row.original;
         if (p.PackedHeight && p.PackedWidth && p.PackedDepth) {
           return (
-            <span className="text-xs text-slate-500 font-mono">
-              {p.PackedHeight}×{p.PackedWidth}×{p.PackedDepth}cm
+            <span className="text-xs text-zinc-500 font-mono tabular-nums">
+              {p.PackedHeight}×{p.PackedWidth}×{p.PackedDepth} cm
             </span>
           );
         }
-        return <span className="text-xs text-slate-400">—</span>;
+        return <span className="text-xs text-zinc-400">—</span>;
       },
     },
     {
@@ -225,13 +225,13 @@ export default function ProductTable({
       cell: ({ row }) => {
         const isCold = row.original.Refrigerated;
         return isCold ? (
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-600">
-            <span className="w-1.5 h-1.5 rounded-xs bg-amber-600 shrink-0" />
-            Cold Chain
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200/60">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+            Cold chain
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-teal-600">
-            <span className="w-1.5 h-1.5 rounded-xs bg-teal-600 shrink-0" />
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium text-zinc-700 bg-zinc-100 border border-zinc-200/80">
+            <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 shrink-0" />
             Ambient
           </span>
         );
@@ -240,42 +240,44 @@ export default function ProductTable({
     {
       id: "actions",
       enableHiding: false,
-      header: () => <span className="text-xs font-semibold text-slate-700 text-right block">Actions</span>,
+      header: () => <span className="text-xs font-semibold text-zinc-700 text-right block">Actions</span>,
       cell: ({ row }) => {
         const p = row.original;
         return (
-          <div className="text-right" onClick={(e) => e.stopPropagation()}>
+          <div className="text-right flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="h-7 w-7 p-0 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg"
+                  className="h-7 w-7 p-0 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors duration-150 cursor-pointer"
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44 bg-white shadow-lg border border-slate-200">
-                <DropdownMenuLabel className="text-xs text-slate-500">Actions</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-44 bg-white shadow-lg border border-zinc-200/80 rounded-lg p-1">
+                <DropdownMenuLabel className="text-xs font-medium text-zinc-500 px-2 py-1.5">
+                  Actions
+                </DropdownMenuLabel>
                 <DropdownMenuItem
                   onClick={() => onSelectProduct(p)}
-                  className="cursor-pointer text-slate-700 focus:bg-slate-50 text-xs"
+                  className="cursor-pointer text-zinc-700 focus:bg-zinc-50 focus:text-zinc-900 text-xs rounded-md px-2 py-1.5"
                 >
-                  <Eye className="mr-2 h-3.5 w-3.5 text-slate-500" />
-                  View Details
+                  <Eye className="mr-2 h-3.5 w-3.5 text-zinc-500" />
+                  View details
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onEditProduct(p)}
-                  className="cursor-pointer text-slate-700 focus:bg-slate-50 text-xs"
+                  className="cursor-pointer text-zinc-700 focus:bg-zinc-50 focus:text-zinc-900 text-xs rounded-md px-2 py-1.5"
                 >
-                  <Edit2 className="mr-2 h-3.5 w-3.5 text-blue-600" />
+                  <Edit2 className="mr-2 h-3.5 w-3.5 text-zinc-600" />
                   Edit SKU
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-zinc-100 my-1" />
                 <DropdownMenuItem
                   onClick={() => onDeleteProduct(p)}
-                  className="cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-700 text-xs"
+                  className="cursor-pointer text-rose-600 focus:bg-rose-50 focus:text-rose-700 text-xs rounded-md px-2 py-1.5"
                 >
-                  <Trash2 className="mr-2 h-3.5 w-3.5 text-red-600" />
+                  <Trash2 className="mr-2 h-3.5 w-3.5 text-rose-600" />
                   Delete SKU
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -284,9 +286,9 @@ export default function ProductTable({
         );
       },
     },
-  ];
+  ], [products, selectedRowIds, onSelectProduct, onEditProduct, onDeleteProduct]);
 
-  const filteredProducts = React.useMemo(() => {
+  const filteredProducts = useMemo(() => {
     let result = products;
     if (globalFilter.trim()) {
       const q = globalFilter.toLowerCase();
@@ -294,7 +296,7 @@ export default function ProductTable({
         (p) =>
           p.ProductName.toLowerCase().includes(q) ||
           p.ProductCode.toLowerCase().includes(q) ||
-          p.ProductCategory.toLowerCase().includes(q)
+          (p.ProductCategory && p.ProductCategory.toLowerCase().includes(q))
       );
     }
     if (priorityFilter !== "ALL") {
@@ -336,12 +338,12 @@ export default function ProductTable({
 
   return (
     <div className="space-y-3">
-      {/* Enterprise Filter & View Toolbar */}
+      {/* Search and Filter Toolbar */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
         <div className="flex flex-wrap items-center gap-2 flex-1">
           {/* Search Input */}
           <div className="relative w-56 sm:w-64">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
             <Input
               placeholder="Search catalog SKUs..."
               value={globalFilter}
@@ -349,74 +351,68 @@ export default function ProductTable({
                 setGlobalFilter(e.target.value);
                 setPagination((prev) => ({ ...prev, pageIndex: 0 }));
               }}
-              className="pl-8 h-8 text-xs bg-white border-slate-200 text-slate-800 placeholder:text-slate-400 rounded-lg shadow-2xs focus-visible:ring-blue-600"
+              className="pl-8 h-8 text-xs bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 rounded-lg shadow-2xs focus-visible:ring-1 focus-visible:ring-zinc-900"
             />
           </div>
 
-          {/* Quick Filter Pills */}
+          {/* Quick Filter: Handling */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="h-8 px-2.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 shadow-2xs transition-colors"
-              >
-                <User className="w-3.5 h-3.5 text-slate-500" />
-                <span>Assigned to</span>
-                <ChevronDown className="w-3 h-3 text-slate-400" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-40 bg-white text-xs">
-              <DropdownMenuItem onClick={() => { setGlobalFilter(""); setPagination((prev) => ({ ...prev, pageIndex: 0 })); }}>All Leads</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { setGlobalFilter("Apex"); setPagination((prev) => ({ ...prev, pageIndex: 0 })); }}>Apex Logistics</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { setGlobalFilter("Starlight"); setPagination((prev) => ({ ...prev, pageIndex: 0 })); }}>Starlight Retail</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className={`h-8 px-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 shadow-2xs transition-colors ${
+                className={`h-8 px-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 shadow-2xs transition-colors duration-150 cursor-pointer ${
                   priorityFilter !== "ALL"
-                    ? "border-blue-400 bg-blue-50 text-blue-700"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    ? "border-zinc-300 bg-zinc-100 text-zinc-900 font-semibold"
+                    : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
                 }`}
               >
-                <Flag className="w-3.5 h-3.5 text-slate-500" />
-                <span>Handling {priorityFilter !== "ALL" ? `(${priorityFilter})` : ""}</span>
-                <ChevronDown className="w-3 h-3 text-slate-400" />
+                <Flag className="w-3.5 h-3.5 text-zinc-500" />
+                <span>
+                  Handling {priorityFilter === "COLD" ? "(Cold chain)" : priorityFilter === "STD" ? "(Ambient)" : ""}
+                </span>
+                <ChevronDown className="w-3 h-3 text-zinc-400" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-36 bg-white text-xs">
-              <DropdownMenuItem onClick={() => { setPriorityFilter("ALL"); setPagination((prev) => ({ ...prev, pageIndex: 0 })); }}>All Storage</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { setPriorityFilter("COLD"); setPagination((prev) => ({ ...prev, pageIndex: 0 })); }}>Cold Chain</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { setPriorityFilter("STD"); setPagination((prev) => ({ ...prev, pageIndex: 0 })); }}>Ambient</DropdownMenuItem>
+            <DropdownMenuContent align="start" className="w-36 bg-white text-xs border-zinc-200/80 rounded-lg p-1">
+              <DropdownMenuItem
+                onClick={() => {
+                  setPriorityFilter("ALL");
+                  setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+                }}
+                className="cursor-pointer text-xs rounded-md"
+              >
+                All storage
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setPriorityFilter("COLD");
+                  setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+                }}
+                className="cursor-pointer text-xs rounded-md"
+              >
+                Cold chain
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setPriorityFilter("STD");
+                  setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+                }}
+                className="cursor-pointer text-xs rounded-md"
+              >
+                Ambient
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <button
-            type="button"
-            onClick={() => setBookmarkedOnly(!bookmarkedOnly)}
-            className={`h-8 px-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 shadow-2xs transition-colors ${
-              bookmarkedOnly
-                ? "border-blue-400 bg-blue-50 text-blue-700"
-                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-            }`}
-          >
-            <Bookmark className={`w-3.5 h-3.5 ${bookmarkedOnly ? "text-blue-600 fill-blue-600" : "text-slate-500"}`} />
-            <span>Bookmarked</span>
-          </button>
-
-          {(globalFilter || priorityFilter !== "ALL" || bookmarkedOnly) && (
+          {(globalFilter || priorityFilter !== "ALL") && (
             <button
               type="button"
               onClick={() => {
                 setGlobalFilter("");
                 setPriorityFilter("ALL");
-                setBookmarkedOnly(false);
               }}
-              className="h-8 px-2 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 flex items-center gap-1 text-xs"
-              title="Reset Filters"
+              className="h-8 px-2 rounded-lg border border-zinc-200 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 flex items-center gap-1 text-xs transition-colors duration-150 cursor-pointer"
+              title="Reset filters"
             >
               <RotateCcw className="w-3 h-3" />
               <span>Reset</span>
@@ -427,15 +423,17 @@ export default function ProductTable({
 
       {/* Selected Rows Banner */}
       {selectedRowIds.size > 0 && (
-        <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-800">
-          <div className="flex items-center gap-2 font-medium">
-            <span className="w-2 h-2 rounded-full bg-blue-600" />
-            <span>{selectedRowIds.size} SKUs selected</span>
+        <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-zinc-900 text-zinc-100 shadow-md border border-zinc-800 animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#FD3706] shrink-0" />
+            <span className="text-xs font-mono tabular-nums font-medium text-zinc-200">
+              {selectedRowIds.size} SKUs selected
+            </span>
           </div>
           <button
             type="button"
             onClick={() => setSelectedRowIds(new Set())}
-            className="text-xs text-blue-600 hover:underline font-semibold"
+            className="text-xs text-zinc-400 hover:text-white transition-colors duration-150 font-medium cursor-pointer"
           >
             Clear selection
           </button>
@@ -443,83 +441,87 @@ export default function ProductTable({
       )}
 
       {/* Table Frame */}
-      <div className="rounded-xl border border-slate-200/90 bg-white shadow-2xs overflow-hidden">
-        <Table>
-          <TableHeader className="bg-slate-50/70 border-b border-slate-200">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="hover:bg-transparent">
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className="py-2.5 px-3.5 text-xs font-semibold text-slate-600 select-none"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => {
-                const isSelected = selectedProduct?.ProductID === row.original.ProductID;
-                const isChecked = selectedRowIds.has(row.original.ProductID);
+      <div className="rounded-xl border border-zinc-200/80 bg-white shadow-2xs overflow-hidden">
+        <div className="overflow-x-auto w-full">
+          <Table>
+            <TableHeader className="bg-zinc-50/95 border-b border-zinc-200/80">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="hover:bg-transparent border-0">
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      scope="col"
+                      className="h-8 py-1.5 px-3.5 text-xs font-semibold text-zinc-700 select-none"
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => {
+                  const isSelected = selectedProduct?.ProductID === row.original.ProductID;
+                  const isChecked = selectedRowIds.has(row.original.ProductID);
 
-                return (
-                  <TableRow
-                    key={row.id}
-                    onClick={() => onSelectProduct(row.original)}
-                    className={`cursor-pointer transition-colors border-b border-slate-100/90 ${
-                      isChecked
-                        ? "bg-blue-50/60 hover:bg-blue-50/80"
-                        : isSelected
-                        ? "bg-blue-50/70 hover:bg-blue-50/90"
-                        : "hover:bg-slate-50/70"
-                    }`}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="py-2.5 px-3.5 text-xs text-slate-800">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                );
-              })
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-28 text-center text-slate-400 text-xs">
-                  No products found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+                  return (
+                    <TableRow
+                      key={row.id}
+                      onClick={() => onSelectProduct(row.original)}
+                      className={`h-9 cursor-pointer transition-colors duration-150 border-b border-zinc-100 ${
+                        isChecked
+                          ? "bg-zinc-100/80 hover:bg-zinc-100"
+                          : isSelected
+                          ? "bg-zinc-100/70 hover:bg-zinc-100/90"
+                          : "hover:bg-zinc-50/60"
+                      }`}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id} className="py-2 px-3.5 text-xs text-zinc-800">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-28 text-center text-zinc-400 text-xs">
+                    No products found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
         {/* Enterprise Pagination Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-2.5 bg-white border-t border-slate-100">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-2.5 bg-white border-t border-zinc-200/80">
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="h-7 px-2.5 text-xs rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 shadow-2xs font-medium"
+                  className="h-8 px-2.5 text-xs rounded-lg border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 flex items-center gap-1.5 shadow-2xs font-medium cursor-pointer transition-colors duration-150"
                 >
-                  <span>{pageSize} results</span>
-                  <ChevronDown className="w-3 h-3 text-slate-400" />
+                  <span className="font-mono tabular-nums">{pageSize}</span>
+                  <span>rows</span>
+                  <ChevronDown className="w-3 h-3 text-zinc-400" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-32 bg-white text-xs">
+              <DropdownMenuContent align="start" className="w-32 bg-white text-xs border-zinc-200/80 rounded-lg p-1">
                 {[5, 10, 25, 50, 100].map((size) => (
                   <DropdownMenuItem
                     key={size}
                     onClick={() =>
                       setPagination({ pageIndex: 0, pageSize: size })
                     }
-                    className="cursor-pointer"
+                    className="cursor-pointer font-mono tabular-nums text-xs rounded-md"
                   >
-                    {size} results
+                    {size} rows
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -527,8 +529,8 @@ export default function ProductTable({
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-500 font-medium">
-              {startRow} - {endRow} of {totalCount} results
+            <span className="text-xs text-zinc-500 font-mono tabular-nums">
+              {startRow}–{endRow} of {totalCount} records
             </span>
             <div className="flex items-center gap-1">
               <button
@@ -540,7 +542,7 @@ export default function ProductTable({
                   }))
                 }
                 disabled={pageIndex === 0}
-                className="w-7 h-7 rounded-md border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs transition-colors"
+                className="w-8 h-8 rounded-lg border border-zinc-200 bg-white flex items-center justify-center text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs transition-colors duration-150 cursor-pointer"
                 title="Previous page"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
@@ -555,7 +557,7 @@ export default function ProductTable({
                 ) {
                   if (pageIdx === 1 || pageIdx === totalPages - 2) {
                     return (
-                      <span key={`ellipsis-${pageIdx}`} className="px-1 text-slate-400 text-xs">
+                      <span key={`ellipsis-${pageIdx}`} className="px-1 text-zinc-400 text-xs">
                         ...
                       </span>
                     );
@@ -571,10 +573,10 @@ export default function ProductTable({
                     onClick={() =>
                       setPagination((prev) => ({ ...prev, pageIndex: pageIdx }))
                     }
-                    className={`min-w-7 h-7 px-2 rounded-md text-xs font-semibold transition-colors flex items-center justify-center ${
+                    className={`min-w-8 h-8 px-2.5 rounded-lg text-xs font-mono tabular-nums font-semibold transition-colors duration-150 flex items-center justify-center cursor-pointer ${
                       isActive
-                        ? "bg-[#FD3706] text-white shadow-xs font-archivo"
-                        : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 font-archivo"
+                        ? "bg-[#FD3706] text-white shadow-xs"
+                        : "bg-white text-zinc-700 border border-zinc-200 hover:bg-zinc-50"
                     }`}
                   >
                     {pageIdx + 1}
@@ -591,7 +593,7 @@ export default function ProductTable({
                   }))
                 }
                 disabled={pageIndex >= totalPages - 1}
-                className="w-7 h-7 rounded-md border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs transition-colors"
+                className="w-8 h-8 rounded-lg border border-zinc-200 bg-white flex items-center justify-center text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs transition-colors duration-150 cursor-pointer"
                 title="Next page"
               >
                 <ChevronRight className="w-3.5 h-3.5" />
